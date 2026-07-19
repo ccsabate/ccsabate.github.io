@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger &amp; Goal">
+<meta name="theme-color" content="#1F3D2B">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="icon" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
+<title>Personal Finance Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --paper:#FAF7EF;
+  --card:#FFFFFF;
+  --ledger:#1F3D2B;
+  --ledger-light:#2E5940;
+  --gold:#B8902E;
+  --gold-soft:#EFE3C2;
+  --brick:#A8442F;
+  --brick-soft:#F3DFD8;
+  --ink:#26291F;
+  --muted:#767A66;
+  --line:#E4DFCF;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;}
+.app{display:flex;min-height:100vh;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:230px;background:var(--ledger);color:#F3EFE1;flex-shrink:0;padding:24px 0;display:flex;flex-direction:column;}
+.brand{padding:0 22px 20px 22px;border-bottom:1px solid rgba(255,255,255,0.12);margin-bottom:12px;}
+.brand-title{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.2;}
+.brand-sub{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-top:4px;}
+.nav{display:flex;flex-direction:column;gap:2px;padding:8px 12px;}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:none;border:none;color:#E7E3D3;font-family:'Inter',sans-serif;font-size:13.5px;text-align:left;cursor:pointer;transition:background .15s;}
+.nav-btn:hover{background:rgba(255,255,255,0.08);}
+.nav-btn.active{background:var(--gold);color:var(--ledger);font-weight:600;}
+.nav-icon{width:16px;height:16px;flex-shrink:0;}
+.sidebar-footer{margin-top:auto;padding:14px 22px 0 22px;border-top:1px solid rgba(255,255,255,0.12);font-size:11px;color:#B9B49A;}
+
+/* ---------- Main ---------- */
+.main{flex:1;padding:32px 40px;max-width:1180px;}
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.page-title{font-family:'Fraunces',serif;font-size:28px;font-weight:600;}
+.page-title .rule{display:block;width:52px;height:3px;background:var(--gold);margin-top:8px;border-radius:2px;}
+.page-desc{color:var(--muted);font-size:13px;margin-top:6px;max-width:520px;}
+.controls{display:flex;gap:10px;align-items:center;}
+
+select, input[type=text], input[type=number], input[type=date]{
+  font-family:'Inter',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);
+}
+input:focus, select:focus{outline:2px solid var(--gold-soft);border-color:var(--gold);}
+.btn{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:8px 14px;border-radius:7px;border:1px solid var(--ledger);background:var(--ledger);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{background:var(--ledger-light);}
+.btn.secondary{background:#fff;color:var(--ledger);border:1px solid var(--line);}
+.btn.secondary:hover{background:var(--gold-soft);}
+.btn.danger{background:#fff;color:var(--brick);border:1px solid var(--brick-soft);padding:5px 9px;font-size:12px;}
+.btn.danger:hover{background:var(--brick-soft);}
+
+/* ---------- KPI cards (ledger-stub style) ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:28px;}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px 14px 18px;position:relative;overflow:hidden;}
+.kpi-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;
+  background-image:radial-gradient(circle at 6px 3px, var(--paper) 3px, transparent 3.5px);
+  background-size:12px 6px;background-repeat:repeat-x;background-position:bottom;}
+.kpi-label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:6px;color:var(--ledger);}
+.kpi-value.neg{color:var(--brick);}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ---------- Cards / sections ---------- */
+.section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:24px;}
+.section-title{font-family:'Fraunces',serif;font-size:15px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--ledger);border-bottom:2px solid var(--gold);display:inline-block;padding-bottom:5px;margin-bottom:16px;}
+
+/* ---------- Tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--line);}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:12.5px;vertical-align:middle;}
+td.text{font-family:'Inter',sans-serif;font-size:13px;}
+tbody tr:nth-child(odd){background:#FCFBF6;}
+tbody tr:hover{background:var(--gold-soft);}
+tfoot td{font-weight:700;border-top:2px solid var(--ledger);border-bottom:none;background:#F5F1E4;}
+td input, td select{width:100%;min-width:70px;border:1px solid transparent;background:transparent;font-family:inherit;font-size:inherit;padding:4px 6px;border-radius:5px;}
+td input:hover, td select:hover{border-color:var(--line);}
+td input:focus, td select:focus{border-color:var(--gold);background:#fff;}
+.amt-pos{color:var(--ledger-light);}
+.amt-neg{color:var(--brick);}
+
+/* progress bar */
+.progress-wrap{display:flex;align-items:center;gap:8px;min-width:120px;}
+.progress-track{flex:1;height:7px;background:var(--line);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--ledger-light));border-radius:4px;}
+.progress-pct{font-size:11px;color:var(--muted);width:36px;text-align:right;}
+
+/* new row form */
+.add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);}
+.add-row input, .add-row select{padding:7px 9px;}
+.add-row .desc{width:170px;}
+.add-row .cat{width:150px;}
+.add-row .amt{width:100px;}
+.add-row .short{width:100px;}
+
+/* charts */
+.chart-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
+@media (max-width:900px){.chart-grid{grid-template-columns:1fr;}}
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.donut{width:150px;height:150px;border-radius:50%;flex-shrink:0;}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:12px;}
+.legend-item{display:flex;align-items:center;gap:7px;}
+.swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:180px;padding:10px 4px 0 4px;border-bottom:1px solid var(--line);}
+.bar-group{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
+.bar-pair{display:flex;align-items:flex-end;gap:2px;height:150px;}
+.bar{width:9px;border-radius:2px 2px 0 0;}
+.bar.income{background:var(--ledger-light);}
+.bar.expense{background:var(--brick);}
+.bar-month{font-size:10px;color:var(--muted);}
+.line-chart-wrap{overflow-x:auto;}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media (max-width:900px){.two-col{grid-template-columns:1fr;}}
+.tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.tag{display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:5px 6px 5px 12px;font-size:12.5px;}
+.tag button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 5px;border-radius:50%;}
+.tag button:hover{background:var(--brick-soft);color:var(--brick);}
+.empty-msg{color:var(--muted);font-size:13px;font-style:italic;padding:14px 4px;}
+.small-note{font-size:11.5px;color:var(--muted);margin-top:8px;}
+
+/* ---------- Mobile / "app" chrome ---------- */
+.mobile-header{display:none;position:fixed;top:0;left:0;right:0;z-index:60;
+  background:var(--ledger);color:#F3EFE1;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 12px 16px;
+  font-family:'Fraunces',serif;font-weight:600;font-size:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.12);}
+.mobile-header .brand-sub{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-top:2px;}
+.mobile-header-row{display:flex;justify-content:space-between;align-items:center;}
+.mobile-header-actions{display:flex;gap:6px;}
+.mobile-icon-btn{padding:6px 10px;font-size:15px;min-width:36px;}
+.mobile-tabbar{display:none;}
+
+@media (max-width:760px){
+  .app{flex-direction:column;}
+  .sidebar{display:none;}
+  .mobile-header{display:block;}
+  .main{padding:16px 16px calc(90px + env(safe-area-inset-bottom)) 16px;
+        padding-top:calc(88px + env(safe-area-inset-top));max-width:100%;}
+  .page-header{align-items:flex-start;}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .kpi-card{padding:12px 14px 12px 14px;}
+  .kpi-value{font-size:18px;}
+  .chart-grid, .two-col{grid-template-columns:1fr;}
+  table{font-size:12px;}
+  th, td{padding:7px 6px;}
+  .add-row{flex-direction:column;align-items:stretch;}
+  .add-row input, .add-row select, .add-row .desc, .add-row .cat, .add-row .amt, .add-row .short{width:100%;}
+
+  .mobile-tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;
+    background:var(--ledger);
+    padding:6px 2px calc(6px + env(safe-area-inset-bottom)) 2px;
+    box-shadow:0 -2px 10px rgba(0,0,0,0.18);}
+  .mobile-tabbar .nav-btn{flex:1;flex-direction:column;gap:2px;padding:6px 2px;border-radius:10px;font-size:9.5px;text-align:center;line-height:1.15;}
+  .mobile-tabbar .nav-btn .nav-icon{font-size:17px;}
+  .mobile-tabbar .nav-btn.active{background:var(--gold);color:var(--ledger);}
+}
+
+/* ---------- Save controls / toast ---------- */
+.save-box{padding:0 22px;margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+.btn.save-btn{background:var(--gold);color:var(--ledger);border:1px solid var(--gold);width:100%;justify-content:center;}
+.btn.save-btn:hover{background:#CDA23A;}
+.btn.backup-btn{background:none;color:#E7E3D3;border:1px solid rgba(255,255,255,0.25);width:100%;justify-content:center;font-size:12px;padding:6px 10px;}
+.btn.backup-btn:hover{background:rgba(255,255,255,0.08);}
+.save-indicator{font-size:10.5px;color:#B9B49A;text-align:center;min-height:13px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ledger);color:#fff;
+  padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:200;
+  box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--brick);}
+.mobile-save-row{display:none;}
+@media (max-width:760px){
+  .toast{bottom:calc(76px + env(safe-area-inset-bottom));}
+  .mobile-save-row{display:flex;gap:8px;margin-bottom:12px;}
+  .mobile-save-row .btn{flex:1;justify-content:center;font-size:12px;padding:9px 8px;}
+}
+
+/* ---------- Sync / connect overlay ---------- */
+.sync-status-line{font-size:11px;color:#D8D4C0;display:flex;align-items:center;gap:6px;}
+.sync-code-display{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-weight:600;letter-spacing:1px;}
+.connect-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(31,61,43,0.55);
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
+.connect-overlay.show{display:flex;}
+.connect-card{background:var(--card);border-radius:14px;padding:28px 26px;max-width:380px;width:100%;
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;max-height:90vh;overflow-y:auto;}
+.connect-sub{font-size:12.5px;color:var(--muted);margin:8px 0 18px 0;line-height:1.5;}
+.connect-section{margin-bottom:14px;}
+.connect-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:8px;}
+.connect-section input{width:100%;margin-bottom:8px;text-align:center;font-size:16px;padding:10px;}
+.connect-section .btn{width:100%;justify-content:center;}
+.connect-divider{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0;position:relative;}
+.connect-divider::before,.connect-divider::after{content:"";position:absolute;top:50%;width:35%;height:1px;background:var(--line);}
+.connect-divider::before{left:0;} .connect-divider::after{right:0;}
+.connect-error{color:var(--brick);font-size:12px;margin-top:6px;min-height:16px;}
+.sync-code-box{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:4px;
+  color:var(--ledger);background:var(--gold-soft);border:1px dashed var(--gold);border-radius:8px;
+  padding:14px 10px;margin:12px 0;}
+.connect-card .btn{margin-top:6px;}
+</style>
+<!-- Firebase (for cross-device sync) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Ledger &amp; Goal</div>
+      <div class="brand-sub">Personal Finance Tracker</div>
+    </div>
+    <div class="nav" id="nav"></div>
+    <div class="save-box">
+      <button class="btn save-btn" onclick="manualSave()">💾 Save Now</button>
+      <button class="btn backup-btn" onclick="backupData()">⬇ Download Backup</button>
+      <label class="btn backup-btn" style="cursor:pointer;">
+        ⬆ Restore from Backup
+        <input type="file" accept="application/json" style="display:none" onchange="restoreData(this)">
+      </label>
+      <div class="save-indicator">— unsaved —</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sync-status-line">🔗 Sync Code: <span class="sync-code-display">—</span></div>
+      <button class="btn backup-btn" style="margin-top:8px;" onclick="openSyncPanel()">Manage Sync</button>
+    </div>
+  </div>
+  <div class="mobile-header">
+    <div class="mobile-header-row">
+      <div>
+        Ledger &amp; Goal
+        <div class="brand-sub">Personal Finance Tracker</div>
+      </div>
+      <div class="mobile-header-actions">
+        <button class="btn backup-btn mobile-icon-btn" onclick="openSyncPanel()" title="Sync settings">🔗</button>
+        <button class="btn save-btn mobile-icon-btn" onclick="manualSave()" title="Save now">💾</button>
+        <button class="btn backup-btn mobile-icon-btn" onclick="backupData()" title="Download backup">⬇</button>
+        <label class="btn backup-btn mobile-icon-btn" title="Restore from backup">⬆
+          <input type="file" accept="application/json" style="display:none" onchange="restoreData(this)">
+        </label>
+      </div>
+    </div>
+    <div class="save-indicator" style="text-align:left;">— unsaved —</div>
+  </div>
+  <div class="main" id="main"></div>
+  <div class="mobile-tabbar" id="mobile-nav"></div>
+  <div class="toast" id="toast"></div>
+  <div class="connect-overlay" id="connect-overlay"><div class="connect-card" id="connect-card"></div></div>
+</div>
+
+<script>
+/* ============================= STATE ============================= */
+const STORAGE_KEY = "finance_tracker_state_v1";
+const uid = () => Math.random().toString(36).slice(2,10);
+const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function defaultState(){
+  return {
+    currency: "₱",
+    activeTab: "dashboard",
+    dashboardYear: 2026,
+    budgetMonth: 1,
+    budgetYear: 2026,
+    categories: {
+      income: ["Salary","Freelance / Side Income","Investment Income","Gifts Received","Other Income"],
+      expense: ["Housing / Rent","Utilities","Groceries","Transportation","Insurance","Debt Payments","Dining Out","Entertainment","Subscriptions","Personal Care","Shopping","Health & Medical","Education","Miscellaneous"]
+    },
+    transactions: [
+      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, account:"Debit Card"},
+      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, account:"Bank Transfer"}
+    ],
+    budgets: {"Groceries":400,"Housing / Rent":1200,"Utilities":150,"Salary":3200},
+    savingsGoals: [
+      {id:uid(), name:"Emergency Fund", goal:1000, starting:70, monthly:20, saved:860},
+      {id:uid(), name:"Travel", goal:200, starting:10, monthly:20, saved:110}
+    ],
+    debts: [
+      {id:uid(), name:"Credit Card - Visa", type:"Credit Card", original:5000, current:3200, rate:24, minPayment:150, extraPayment:50}
+    ],
+    netWorth: [
+      {id:uid(), month:"Jan 2026", cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0}
+    ]
+  };
+}
+
+let state = defaultState();
+let saveStatus = "idle"; // idle | saved | error
+
+/* ---------- FIREBASE SETUP -------------------------------------------------
+   1) Create a free project at https://console.firebase.google.com
+   2) In the project, go to Build → Firestore Database → Create database
+      (choose any region, start in "test mode" is fine to begin with)
+   3) Project settings (gear icon) → General → "Your apps" → Add app → Web
+   4) Copy the firebaseConfig values it gives you into FIREBASE_CONFIG below
+   5) Recommended Firestore rule once it's working (Firestore → Rules):
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            match /financeTrackers/{code} {
+              allow read, write: if code is string && code.size() == 8;
+            }
+          }
+        }
+      This isn't real authentication — anyone who has your 8-character
+      Sync Code can read/write that one tracker. Keep the code private,
+      the same way you'd treat a shared password.
+---------------------------------------------------------------------------- */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCAZLSqJylYoRvQPj_C1scDLbbcXFqf8BU",
+  authDomain: "budget-tracker-28dd7.firebaseapp.com",
+  projectId: "budget-tracker-28dd7",
+  storageBucket: "budget-tracker-28dd7.firebasestorage.app",
+  messagingSenderId: "988472828920",
+  appId: "1:988472828920:web:1a87dcb4fa722901eaac0d",
+  measurementId: "G-4TF9FQHD3L"
+};
+
+const SYNC_CODE_KEY = "ledger_sync_code_v1";
+let db = null;
+let firebaseReady = false;
+let syncCode = null;
+let unsubscribeSnapshot = null;
+let lastPushedJSON = null;
+
+function firebaseConfigured(){
+  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+}
+
+function initFirebase(){
+  if (!firebaseConfigured()) { firebaseReady = false; return; }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){ /* ok if unsupported */ }
+    firebaseReady = true;
+  }catch(e){
+    console.error("Firebase init failed", e);
+    firebaseReady = false;
+  }
+}
+
+function docRef(code){ return db.collection("financeTrackers").doc(code); }
+
+function genCode(){
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+  let c = "";
+  for (let i=0;i<8;i++) c += chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+async function startNewTracker(){
+  if (!firebaseReady){ showConnectError(); return; }
+  try{
+    const code = genCode();
+    const fresh = defaultState();
+    await docRef(code).set(fresh);
+    localStorage.setItem(SYNC_CODE_KEY, code);
+    state = fresh;
+    connectToCode(code);
+  }catch(e){
+    console.error(e);
+    showConnectError("Couldn't create a tracker — check your Firestore setup/rules.");
+  }
+}
+
+async function connectExisting(){
+  const input = document.getElementById("connect-code-input");
+  const code = (input.value || "").trim().toUpperCase();
+  if (!code){ showConnectError("Enter a sync code first."); return; }
+  if (!firebaseReady){ showConnectError(); return; }
+  try{
+    const snap = await docRef(code).get();
+    if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); return; }
+    localStorage.setItem(SYNC_CODE_KEY, code);
+    state = Object.assign(defaultState(), snap.data());
+    connectToCode(code);
+  }catch(e){
+    console.error(e);
+    showConnectError("Couldn't reach the sync server. Check your connection and try again.");
+  }
+}
+
+function showConnectError(msg){
+  const el = document.getElementById("connect-error");
+  if (!el) return;
+  el.textContent = msg || "Sync isn't set up yet — open this file and follow the Firebase setup notes near the top of the <script> tag.";
+}
+
+function connectToCode(code){
+  syncCode = code;
+  subscribeToDoc();
+  render();
+  renderConnectOverlay();
+  document.getElementById("connect-overlay").classList.remove("show");
+  updateSyncCodeDisplay();
+  saveStatus = "saved";
+  updateSaveIndicator();
+}
+
+function subscribeToDoc(){
+  if (unsubscribeSnapshot) unsubscribeSnapshot();
+  unsubscribeSnapshot = docRef(syncCode).onSnapshot(snap => {
+    if (!snap.exists) return;
+    const data = snap.data();
+    const json = JSON.stringify(data);
+    if (json === lastPushedJSON) return; // ignore the echo of our own write
+    state = Object.assign(defaultState(), data);
+    render();
+    saveStatus = "saved";
+    updateSaveIndicator();
+  }, err => {
+    console.error("Sync listener error", err);
+    saveStatus = "error";
+    updateSaveIndicator();
+  });
+}
+
+function updateSyncCodeDisplay(){
+  document.querySelectorAll(".sync-code-display").forEach(el=>{ el.textContent = syncCode || "—"; });
+}
+
+function disconnectSync(){
+  if (unsubscribeSnapshot) unsubscribeSnapshot();
+  localStorage.removeItem(SYNC_CODE_KEY);
+  syncCode = null;
+  state = defaultState();
+  render();
+  renderConnectOverlay();
+  document.getElementById("connect-overlay").classList.add("show");
+  updateSyncCodeDisplay();
+}
+
+function copySyncCode(){
+  if (!syncCode) return;
+  navigator.clipboard.writeText(syncCode).then(()=> showToast_(false, "Sync code copied")).catch(()=>{});
+}
+
+function openSyncPanel(){
+  renderConnectOverlay();
+  document.getElementById("connect-overlay").classList.add("show");
+}
+function closeSyncPanel(){
+  if (!syncCode) return; // must be connected to dismiss
+  document.getElementById("connect-overlay").classList.remove("show");
+}
+
+function renderConnectOverlay(){
+  const card = document.getElementById("connect-card");
+  if (!card) return;
+  const setupWarning = !firebaseConfigured()
+    ? `<div class="connect-error" style="margin-bottom:10px;">⚠ Sync isn't configured yet. Open this file and fill in FIREBASE_CONFIG near the top of the &lt;script&gt; tag — setup steps are in the comment right above it.</div>` : "";
+  if (!syncCode){
+    card.innerHTML = `
+      <div class="brand-title" style="color:var(--ledger);font-size:20px;">Ledger &amp; Goal</div>
+      <div class="connect-sub">Connect this device to sync your data across your phone, laptop, and anywhere else you open this link.</div>
+      ${setupWarning}
+      <div class="connect-section">
+        <div class="connect-label">New here?</div>
+        <button class="btn save-btn" onclick="startNewTracker()">✨ Create a New Tracker</button>
+      </div>
+      <div class="connect-divider">or connect to an existing one</div>
+      <div class="connect-section">
+        <input type="text" id="connect-code-input" placeholder="Enter your Sync Code" maxlength="8">
+        <button class="btn secondary" onclick="connectExisting()">Connect</button>
+      </div>
+      <div class="connect-error" id="connect-error"></div>
+    `;
+  } else {
+    card.innerHTML = `
+      <div class="brand-title" style="color:var(--ledger);font-size:20px;">Synced ✓</div>
+      <div class="connect-sub">This device is connected. Enter this same code on any other device to see the same data everywhere.</div>
+      <div class="sync-code-box">${syncCode}</div>
+      <button class="btn secondary" onclick="copySyncCode()">Copy Sync Code</button>
+      <div class="connect-divider">Switch to a different tracker</div>
+      <div class="connect-section">
+        <input type="text" id="connect-code-input" placeholder="Enter a different Sync Code" maxlength="8">
+        <button class="btn secondary" onclick="connectExisting()">Switch</button>
+      </div>
+      <div class="connect-error" id="connect-error"></div>
+      <button class="btn backup-btn" onclick="closeSyncPanel()">Close</button>
+      <button class="btn danger" style="width:100%;justify-content:center;padding:8px;" onclick="disconnectSync()">Disconnect this device</button>
+    `;
+  }
+}
+
+function loadState(){
+  initFirebase();
+  renderConnectOverlay();
+  const savedCode = localStorage.getItem(SYNC_CODE_KEY);
+  if (savedCode && firebaseReady){
+    connectToCode(savedCode);
+  } else {
+    document.getElementById("connect-overlay").classList.add("show");
+  }
+  render();
+  updateSaveIndicator();
+}
+
+let saveTimer = null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { commitSave(false); }, 400);
+}
+
+function commitSave(showToast){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ /* best-effort local cache */ }
+  if (!syncCode || !db){
+    saveStatus = "error";
+    updateSaveIndicator();
+    if (showToast) showToast_(true, "Not connected — tap 🔗 Manage Sync first.");
+    return;
+  }
+  const json = JSON.stringify(state);
+  lastPushedJSON = json;
+  docRef(syncCode).set(state)
+    .then(()=>{
+      saveStatus = "saved";
+      updateSaveIndicator();
+      if (showToast) showToast_(false, "✓ Synced");
+    })
+    .catch(e=>{
+      console.error("Save failed", e);
+      saveStatus = "error";
+      updateSaveIndicator();
+      if (showToast) showToast_(true, "⚠ Couldn't sync — check your connection");
+    });
+}
+
+function manualSave(){
+  clearTimeout(saveTimer);
+  commitSave(true);
+}
+
+function showToast_(isError, message){
+  const t = document.getElementById("toast");
+  if (!t) return;
+  t.textContent = message || (isError ? "⚠ Something went wrong." : "✓ Saved");
+  t.className = "toast show" + (isError ? " error" : "");
+  clearTimeout(showToast_.timer);
+  showToast_.timer = setTimeout(()=>{ t.className = "toast"; }, 2200);
+}
+
+function updateSaveIndicator(){
+  document.querySelectorAll(".save-indicator").forEach(el=>{
+    el.textContent = saveStatus==="saved" ? "All changes synced" : (saveStatus==="error" ? "Not synced — tap 🔗" : "");
+  });
+}
+
+/* ---------- Backup / Restore (extra safety net beyond cloud sync) ---------- */
+function backupData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `ledger-goal-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function restoreData(fileInput){
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const parsed = JSON.parse(e.target.result);
+      state = Object.assign(defaultState(), parsed);
+      commitSave(true);
+      render();
+    }catch(err){
+      alert("That file doesn't look like a valid backup.");
+    }
+  };
+  reader.readAsText(file);
+  fileInput.value = "";
+}
+
+/* ============================= HELPERS ============================= */
+function fmt(n){
+  n = Number(n)||0;
+  const sign = n<0 ? "-" : "";
+  return sign + state.currency + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function pct(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:1}) + "%"; }
+
+function txSum(category, type, month, year){
+  return state.transactions.reduce((sum,t)=>{
+    const d = new Date(t.date+"T00:00:00");
+    if (t.category===category && t.type===type && d.getMonth()+1===month && d.getFullYear()===year){
+      return sum + Number(t.amount||0);
+    }
+    return sum;
+  },0);
+}
+function ytdSum(type, year){
+  return state.transactions.reduce((sum,t)=>{
+    const d = new Date(t.date+"T00:00:00");
+    if (t.type===type && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    return sum;
+  },0);
+}
+function monthSum(type, month, year){
+  return state.transactions.reduce((sum,t)=>{
+    const d = new Date(t.date+"T00:00:00");
+    if (t.type===type && d.getMonth()+1===month && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    return sum;
+  },0);
+}
+function categoryYearSum(category, type, year){
+  return state.transactions.reduce((sum,t)=>{
+    const d = new Date(t.date+"T00:00:00");
+    if (t.category===category && t.type===type && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    return sum;
+  },0);
+}
+function allCategories(){ return [...state.categories.income, ...state.categories.expense]; }
+function netWorthTotal(entry){
+  const assets = (+entry.cash||0)+(+entry.investments||0)+(+entry.property||0)+(+entry.otherAssets||0);
+  const liabilities = (+entry.creditCards||0)+(+entry.loans||0)+(+entry.mortgage||0)+(+entry.otherLiabilities||0);
+  return {assets, liabilities, net: assets-liabilities};
+}
+const palette = ["#1F3D2B","#B8902E","#A8442F","#2E5940","#8A7A4E","#6B4A3A","#4E6B5C","#C2A15A","#7A3B2E","#3E5A4A","#9C8450","#5C4632","#2F4F3F","#B08A4E"];
+
+/* ============================= NAV ============================= */
+const tabs = [
+  {id:"dashboard", label:"Dashboard", icon:"📊"},
+  {id:"transactions", label:"Transactions", icon:"🧾"},
+  {id:"budget", label:"Monthly Budget", icon:"📅"},
+  {id:"savings", label:"Savings Tracker", icon:"💰"},
+  {id:"debt", label:"Debt Tracker", icon:"💳"},
+  {id:"networth", label:"Net Worth", icon:"📈"},
+  {id:"categories", label:"Categories", icon:"🏷️"},
+];
+function renderNav(){
+  const nav = document.getElementById("nav");
+  nav.innerHTML = tabs.map(t => `
+    <button class="nav-btn ${state.activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')">
+      <span class="nav-icon">${t.icon}</span> ${t.label}
+    </button>`).join("");
+
+  const mobileNav = document.getElementById("mobile-nav");
+  if (mobileNav){
+    mobileNav.innerHTML = tabs.map(t => `
+      <button class="nav-btn ${state.activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')">
+        <span class="nav-icon">${t.icon}</span><span>${t.label.split(' ')[0]}</span>
+      </button>`).join("");
+  }
+}
+function switchTab(id){ state.activeTab = id; window.scrollTo(0,0); render(); }
+
+/* ============================= RENDER ROOT ============================= */
+function render(){
+  renderNav();
+  const main = document.getElementById("main");
+  const renderers = {
+    dashboard: renderDashboard,
+    transactions: renderTransactions,
+    budget: renderBudget,
+    savings: renderSavings,
+    debt: renderDebt,
+    networth: renderNetWorth,
+    categories: renderCategories,
+  };
+  main.innerHTML = renderers[state.activeTab]();
+}
+
+/* ============================= DASHBOARD ============================= */
+function renderDashboard(){
+  const year = state.dashboardYear;
+  const income = ytdSum("Income", year);
+  const expense = ytdSum("Expense", year);
+  const net = income - expense;
+  const rate = income ? (net/income*100) : 0;
+
+  const savedTotal = state.savingsGoals.reduce((s,g)=>s+(+g.saved||0),0);
+
+  const lastNW = state.netWorth[state.netWorth.length-1];
+  const nwVal = lastNW ? netWorthTotal(lastNW).net : 0;
+
+  // Monthly income vs expense bars
+  const months = Array.from({length:12},(_,i)=>i+1);
+  const monthData = months.map(m=>({m, inc: monthSum("Income", m, year), exp: monthSum("Expense", m, year)}));
+  const maxVal = Math.max(1, ...monthData.map(d=>Math.max(d.inc,d.exp)));
+  const bars = monthData.map(d => `
+    <div class="bar-group">
+      <div class="bar-pair">
+        <div class="bar income" style="height:${(d.inc/maxVal*150).toFixed(0)}px" title="Income ${fmt(d.inc)}"></div>
+        <div class="bar expense" style="height:${(d.exp/maxVal*150).toFixed(0)}px" title="Expense ${fmt(d.exp)}"></div>
+      </div>
+      <div class="bar-month">${monthNames[d.m-1]}</div>
+    </div>`).join("");
+
+  // Expense breakdown donut
+  const expCats = state.categories.expense.map((c,i)=>({name:c, val: categoryYearSum(c,"Expense",year), color: palette[i%palette.length]}))
+    .filter(c=>c.val>0);
+  const totalExp = expCats.reduce((s,c)=>s+c.val,0) || 1;
+  let acc = 0;
+  const gradientParts = expCats.map(c=>{
+    const start = acc/totalExp*360; acc += c.val; const end = acc/totalExp*360;
+    return `${c.color} ${start}deg ${end}deg`;
+  }).join(", ");
+  const donutStyle = expCats.length ? `background:conic-gradient(${gradientParts});` : `background:var(--line);`;
+  const legend = expCats.length ? expCats.map(c=>`
+    <div class="legend-item"><span class="swatch" style="background:${c.color}"></span>${c.name} — ${fmt(c.val)} (${pct(c.val/totalExp*100)})</div>
+  `).join("") : `<div class="empty-msg">No expenses logged yet for ${year}.</div>`;
+
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard<span class="rule"></span></div>
+      <div class="page-desc">Your financial snapshot at a glance — income, spending, savings and net worth.</div>
+    </div>
+    <div class="controls">
+      <label style="font-size:12px;color:var(--muted);">Year</label>
+      <input type="number" value="${year}" style="width:80px" onchange="state.dashboardYear=+this.value; saveState(); render();">
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Total Income (YTD)</div><div class="kpi-value">${fmt(income)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Expenses (YTD)</div><div class="kpi-value neg">${fmt(expense)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Net Savings (YTD)</div><div class="kpi-value ${net<0?'neg':''}">${fmt(net)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Savings Rate</div><div class="kpi-value">${pct(rate)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Savings Progress</div><div class="kpi-value">${fmt(savedTotal)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Current Net Worth</div><div class="kpi-value ${nwVal<0?'neg':''}">${fmt(nwVal)}</div></div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="section">
+      <div class="section-title">Monthly Income vs. Expenses</div>
+      <div class="bar-chart">${bars}</div>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--muted);">
+        <span><span class="swatch" style="background:var(--ledger-light);display:inline-block;"></span> Income</span>
+        <span><span class="swatch" style="background:var(--brick);display:inline-block;"></span> Expenses</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Expense Breakdown</div>
+      <div class="donut-wrap">
+        <div class="donut" style="${donutStyle}"></div>
+        <div class="legend">${legend}</div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+/* ============================= TRANSACTIONS ============================= */
+function renderTransactions(){
+  const rows = [...state.transactions].sort((a,b)=> b.date.localeCompare(a.date));
+  const catOptions = allCategories().map(c=>`<option value="${c}">${c}</option>`).join("");
+
+  const body = rows.length ? rows.map(t => `
+    <tr>
+      <td class="text">${t.date}</td>
+      <td class="text">${t.description}</td>
+      <td class="text">${t.category}</td>
+      <td class="text">${t.type}</td>
+      <td class="${t.type==='Income'?'amt-pos':'amt-neg'}">${t.type==='Income'?'+':'-'}${fmt(t.amount)}</td>
+      <td class="text">${t.account||""}</td>
+      <td><button class="btn danger" onclick="deleteTransaction('${t.id}')">✕</button></td>
+    </tr>`).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one below.</td></tr>`;
+
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Transactions<span class="rule"></span></div>
+      <div class="page-desc">Your yearly transaction log. Every entry here powers the budget, dashboard and category charts.</div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Log</div>
+    <table>
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Account</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <div class="add-row">
+      <input type="date" id="tx-date" value="2026-01-01">
+      <input type="text" id="tx-desc" class="desc" placeholder="Description">
+      <select id="tx-cat" class="cat">${catOptions}</select>
+      <select id="tx-type" class="short" onchange="syncTxCategory()">
+        <option value="Expense">Expense</option>
+        <option value="Income">Income</option>
+      </select>
+      <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
+      <input type="text" id="tx-acct" class="short" placeholder="Account">
+      <button class="btn" onclick="addTransaction()">+ Add</button>
+    </div>
+  </div>
+  `;
+}
+function syncTxCategory(){
+  const type = document.getElementById("tx-type").value;
+  const list = type==="Income" ? state.categories.income : state.categories.expense;
+  document.getElementById("tx-cat").innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+function addTransaction(){
+  const date = document.getElementById("tx-date").value || "2026-01-01";
+  const description = document.getElementById("tx-desc").value || "Untitled";
+  const category = document.getElementById("tx-cat").value;
+  const type = document.getElementById("tx-type").value;
+  const amount = parseFloat(document.getElementById("tx-amt").value) || 0;
+  const account = document.getElementById("tx-acct").value;
+  state.transactions.push({id:uid(), date, description, category, type, amount, account});
+  saveState(); render();
+}
+function deleteTransaction(id){
+  state.transactions = state.transactions.filter(t=>t.id!==id);
+  saveState(); render();
+}
+
+/* ============================= BUDGET ============================= */
+function renderBudget(){
+  const month = state.budgetMonth, year = state.budgetYear;
+  const cats = [...state.categories.income.map(c=>({c,type:"Income"})), ...state.categories.expense.map(c=>({c,type:"Expense"}))];
+
+  let totalBudgetInc=0, totalActualInc=0, totalBudgetExp=0, totalActualExp=0;
+  const rows = cats.map(({c,type})=>{
+    const budgeted = state.budgets[c]||0;
+    const actual = txSum(c, type, month, year);
+    const diff = actual - budgeted;
+    const usedPct = budgeted ? Math.min(200,(actual/budgeted*100)) : (actual>0?100:0);
+    if (type==="Income"){ totalBudgetInc+=budgeted; totalActualInc+=actual; } else { totalBudgetExp+=budgeted; totalActualExp+=actual; }
+    return `
+    <tr>
+      <td class="text">${c}</td>
+      <td class="text">${type}</td>
+      <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value)"></td>
+      <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
+      <td class="${diff<0 && type==='Expense' ? 'amt-neg' : (diff<0 && type==='Income' ? 'amt-neg':'amt-pos')}">${fmt(diff)}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,usedPct)}%;${usedPct>100?'background:var(--brick);':''}"></div></div>
+          <div class="progress-pct">${pct(usedPct)}</div>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  const netB = totalBudgetInc-totalBudgetExp, netA = totalActualInc-totalActualExp;
+
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Monthly Budget<span class="rule"></span></div>
+      <div class="page-desc">Set a budget per category and compare it to what actually happened that month.</div>
+    </div>
+    <div class="controls">
+      <label style="font-size:12px;color:var(--muted);">Month</label>
+      <select onchange="state.budgetMonth=+this.value; saveState(); render();">
+        ${monthNames.map((m,i)=>`<option value="${i+1}" ${month===i+1?'selected':''}>${m}</option>`).join("")}
+      </select>
+      <label style="font-size:12px;color:var(--muted);">Year</label>
+      <input type="number" value="${year}" style="width:80px" onchange="state.budgetYear=+this.value; saveState(); render();">
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">${monthNames[month-1]} ${year}</div>
+    <table>
+      <thead><tr><th>Category</th><th>Type</th><th>Budgeted</th><th>Actual</th><th>Difference</th><th>% of Budget</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr><td class="text">Total Income</td><td></td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td><td>${fmt(totalActualInc-totalBudgetInc)}</td><td></td></tr>
+        <tr><td class="text">Total Expenses</td><td></td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td><td>${fmt(totalActualExp-totalBudgetExp)}</td><td></td></tr>
+        <tr><td class="text">Net (Income − Expenses)</td><td></td><td>${fmt(netB)}</td><td>${fmt(netA)}</td><td>${fmt(netA-netB)}</td><td></td></tr>
+      </tfoot>
+    </table>
+  </div>
+  `;
+}
+function setBudget(cat, val){ state.budgets[cat] = parseFloat(val)||0; saveState(); render(); }
+
+/* ============================= SAVINGS ============================= */
+function renderSavings(){
+  const goals = state.savingsGoals;
+  const totalGoal = goals.reduce((s,g)=>s+(+g.goal||0),0);
+  const totalSaved = goals.reduce((s,g)=>s+(+g.saved||0),0);
+  const totalLeft = totalGoal-totalSaved;
+  const totalMonthly = goals.reduce((s,g)=>s+(+g.monthly||0),0);
+
+  const rows = goals.map(g=>{
+    const left = (+g.goal||0)-(+g.saved||0);
+    const progress = g.goal ? Math.min(100,(g.saved/g.goal*100)) : 0;
+    const months = g.monthly>0 ? Math.max(0,Math.ceil(left/g.monthly)) : "—";
+    let estDate = "—";
+    if (typeof months==="number"){
+      const d = new Date(); d.setMonth(d.getMonth()+months);
+      estDate = d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+    }
+    return `
+    <tr>
+      <td class="text"><input type="text" value="${g.name}" onchange="updateSaving('${g.id}','name',this.value)"></td>
+      <td><input type="number" value="${g.goal}" onchange="updateSaving('${g.id}','goal',this.value)"></td>
+      <td><input type="number" value="${g.starting}" onchange="updateSaving('${g.id}','starting',this.value)"></td>
+      <td><input type="number" value="${g.monthly}" onchange="updateSaving('${g.id}','monthly',this.value)"></td>
+      <td><input type="number" value="${g.saved}" onchange="updateSaving('${g.id}','saved',this.value)"></td>
+      <td>${fmt(left)}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
+          <div class="progress-pct">${pct(progress)}</div>
+        </div>
+      </td>
+      <td>${months}</td>
+      <td class="text">${estDate}</td>
+      <td><button class="btn danger" onclick="deleteSaving('${g.id}')">✕</button></td>
+    </tr>`;
+  }).join("");
+
+  return `
+  <div class="page-header">
+    <div><div class="page-title">Savings Tracker<span class="rule"></span></div>
+    <div class="page-desc">Keep track of your savings and sinking fund goals and their progress.</div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Savings Goal Total</div><div class="kpi-value">${fmt(totalGoal)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Saved So Far</div><div class="kpi-value">${fmt(totalSaved)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Left to Save</div><div class="kpi-value ${totalLeft<0?'neg':''}">${fmt(totalLeft)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total to Save / Month</div><div class="kpi-value">${fmt(totalMonthly)}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Savings Overview</div>
+    <table>
+      <thead><tr><th>Goal</th><th>Target</th><th>Starting</th><th>Monthly</th><th>Saved</th><th>Left</th><th>Progress</th><th>Est. Months</th><th>Est. Date</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="10" class="empty-msg">No savings goals yet.</td></tr>'}</tbody>
+    </table>
+    <div class="add-row">
+      <button class="btn" onclick="addSaving()">+ Add Goal</button>
+    </div>
+  </div>
+  `;
+}
+function updateSaving(id, field, val){
+  const g = state.savingsGoals.find(x=>x.id===id); if(!g) return;
+  g[field] = field==="name" ? val : (parseFloat(val)||0);
+  saveState(); render();
+}
+function addSaving(){
+  state.savingsGoals.push({id:uid(), name:"New Goal", goal:0, starting:0, monthly:0, saved:0});
+  saveState(); render();
+}
+function deleteSaving(id){ state.savingsGoals = state.savingsGoals.filter(g=>g.id!==id); saveState(); render(); }
+
+/* ============================= DEBT ============================= */
+function renderDebt(){
+  const debts = state.debts;
+  const totalOriginal = debts.reduce((s,d)=>s+(+d.original||0),0);
+  const totalCurrent = debts.reduce((s,d)=>s+(+d.current||0),0);
+  const totalPayment = debts.reduce((s,d)=>s+(+d.minPayment||0)+(+d.extraPayment||0),0);
+  const paidOffPct = totalOriginal ? ((totalOriginal-totalCurrent)/totalOriginal*100) : 0;
+
+  const rows = debts.map(d=>{
+    const progress = d.original ? Math.min(100,((d.original-d.current)/d.original*100)) : 0;
+    const totalPay = (+d.minPayment||0)+(+d.extraPayment||0);
+    return `
+    <tr>
+      <td class="text"><input type="text" value="${d.name}" onchange="updateDebt('${d.id}','name',this.value)"></td>
+      <td class="text"><input type="text" value="${d.type}" onchange="updateDebt('${d.id}','type',this.value)"></td>
+      <td><input type="number" value="${d.original}" onchange="updateDebt('${d.id}','original',this.value)"></td>
+      <td><input type="number" value="${d.current}" onchange="updateDebt('${d.id}','current',this.value)"></td>
+      <td><input type="number" value="${d.rate}" onchange="updateDebt('${d.id}','rate',this.value)">%</td>
+      <td><input type="number" value="${d.minPayment}" onchange="updateDebt('${d.id}','minPayment',this.value)"></td>
+      <td><input type="number" value="${d.extraPayment}" onchange="updateDebt('${d.id}','extraPayment',this.value)"></td>
+      <td>${fmt(totalPay)}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
+          <div class="progress-pct">${pct(progress)}</div>
+        </div>
+      </td>
+      <td><button class="btn danger" onclick="deleteDebt('${d.id}')">✕</button></td>
+    </tr>`;
+  }).join("");
+
+  return `
+  <div class="page-header">
+    <div><div class="page-title">Debt Tracker<span class="rule"></span></div>
+    <div class="page-desc">Track balances, rates and how much progress you've made paying each one down.</div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Original Total</div><div class="kpi-value">${fmt(totalOriginal)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Current Balance</div><div class="kpi-value neg">${fmt(totalCurrent)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Payments</div><div class="kpi-value">${fmt(totalPayment)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Paid Off</div><div class="kpi-value">${pct(paidOffPct)}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Debts</div>
+    <table>
+      <thead><tr><th>Debt</th><th>Type</th><th>Original</th><th>Current</th><th>Rate</th><th>Min. Payment</th><th>Extra</th><th>Total / mo</th><th>Paid Off</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="10" class="empty-msg">No debts logged — nice, or add one to track.</td></tr>'}</tbody>
+    </table>
+    <div class="add-row">
+      <button class="btn" onclick="addDebt()">+ Add Debt</button>
+    </div>
+  </div>
+  `;
+}
+function updateDebt(id, field, val){
+  const d = state.debts.find(x=>x.id===id); if(!d) return;
+  d[field] = (field==="name"||field==="type") ? val : (parseFloat(val)||0);
+  saveState(); render();
+}
+function addDebt(){
+  state.debts.push({id:uid(), name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0});
+  saveState(); render();
+}
+function deleteDebt(id){ state.debts = state.debts.filter(d=>d.id!==id); saveState(); render(); }
+
+/* ============================= NET WORTH ============================= */
+function renderNetWorth(){
+  const rows = state.netWorth.map(e=>{
+    const {assets, liabilities, net} = netWorthTotal(e);
+    return `
+    <tr>
+      <td class="text"><input type="text" value="${e.month}" onchange="updateNW('${e.id}','month',this.value)"></td>
+      <td><input type="number" value="${e.cash}" onchange="updateNW('${e.id}','cash',this.value)"></td>
+      <td><input type="number" value="${e.investments}" onchange="updateNW('${e.id}','investments',this.value)"></td>
+      <td><input type="number" value="${e.property}" onchange="updateNW('${e.id}','property',this.value)"></td>
+      <td><input type="number" value="${e.otherAssets}" onchange="updateNW('${e.id}','otherAssets',this.value)"></td>
+      <td class="amt-pos">${fmt(assets)}</td>
+      <td><input type="number" value="${e.creditCards}" onchange="updateNW('${e.id}','creditCards',this.value)"></td>
+      <td><input type="number" value="${e.loans}" onchange="updateNW('${e.id}','loans',this.value)"></td>
+      <td><input type="number" value="${e.mortgage}" onchange="updateNW('${e.id}','mortgage',this.value)"></td>
+      <td><input type="number" value="${e.otherLiabilities}" onchange="updateNW('${e.id}','otherLiabilities',this.value)"></td>
+      <td class="amt-neg">${fmt(liabilities)}</td>
+      <td class="${net<0?'amt-neg':'amt-pos'}">${fmt(net)}</td>
+      <td><button class="btn danger" onclick="deleteNW('${e.id}')">✕</button></td>
+    </tr>`;
+  }).join("");
+
+  // line chart
+  const points = state.netWorth.map(e=>netWorthTotal(e).net);
+  const w = 640, h = 160, pad = 24;
+  let chartSvg = "";
+  if (points.length>1){
+    const min = Math.min(...points,0), max = Math.max(...points,1);
+    const range = (max-min)||1;
+    const stepX = (w-pad*2)/(points.length-1);
+    const coords = points.map((v,i)=>[pad+i*stepX, h-pad-((v-min)/range)*(h-pad*2)]);
+    const path = coords.map((c,i)=> (i===0?"M":"L")+c[0].toFixed(1)+","+c[1].toFixed(1)).join(" ");
+    const dots = coords.map(c=>`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="3.5" fill="#B8902E"/>`).join("");
+    chartSvg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#E4DFCF"/>
+      <path d="${path}" fill="none" stroke="#1F3D2B" stroke-width="2.5"/>
+      ${dots}
+    </svg>`;
+  } else {
+    chartSvg = `<div class="empty-msg">Add at least two monthly entries to see a trend line.</div>`;
+  }
+
+  return `
+  <div class="page-header">
+    <div><div class="page-title">Net Worth Tracker<span class="rule"></span></div>
+    <div class="page-desc">Log your assets and liabilities each month to watch your net worth trend over time.</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Trend</div>
+    <div class="line-chart-wrap">${chartSvg}</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Monthly Entries</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Month</th><th>Cash</th><th>Investments</th><th>Property</th><th>Other</th><th>Total Assets</th><th>Credit Cards</th><th>Loans</th><th>Mortgage</th><th>Other</th><th>Total Liab.</th><th>Net Worth</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="13" class="empty-msg">No entries yet.</td></tr>'}</tbody>
+    </table>
+    </div>
+    <div class="add-row"><button class="btn" onclick="addNW()">+ Add Month</button></div>
+  </div>
+  `;
+}
+function updateNW(id, field, val){
+  const e = state.netWorth.find(x=>x.id===id); if(!e) return;
+  e[field] = field==="month" ? val : (parseFloat(val)||0);
+  saveState(); render();
+}
+function addNW(){
+  state.netWorth.push({id:uid(), month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0});
+  saveState(); render();
+}
+function deleteNW(id){ state.netWorth = state.netWorth.filter(e=>e.id!==id); saveState(); render(); }
+
+/* ============================= CATEGORIES ============================= */
+function renderCategories(){
+  const incomeTags = state.categories.income.map(c=>`
+    <div class="tag">${c}<button onclick="removeCategory('income','${c}')">✕</button></div>`).join("");
+  const expenseTags = state.categories.expense.map(c=>`
+    <div class="tag">${c}<button onclick="removeCategory('expense','${c}')">✕</button></div>`).join("");
+
+  return `
+  <div class="page-header">
+    <div><div class="page-title">Categories<span class="rule"></span></div>
+    <div class="page-desc">Edit these lists to customize every dropdown across the tracker.</div></div>
+    <div class="controls">
+      <label style="font-size:12px;color:var(--muted);">Currency symbol</label>
+      <input type="text" value="${state.currency}" style="width:50px" onchange="state.currency=this.value||'$'; saveState(); render();">
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title">Income Categories</div>
+      <div class="tag-list">${incomeTags || '<span class="empty-msg">None yet.</span>'}</div>
+      <div class="add-row">
+        <input type="text" id="new-income-cat" class="desc" placeholder="New income category">
+        <button class="btn secondary" onclick="addCategory('income')">+ Add</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Expense Categories</div>
+      <div class="tag-list">${expenseTags || '<span class="empty-msg">None yet.</span>'}</div>
+      <div class="add-row">
+        <input type="text" id="new-expense-cat" class="desc" placeholder="New expense category">
+        <button class="btn secondary" onclick="addCategory('expense')">+ Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="small-note">Removing a category doesn't delete past transactions logged under it — it just stops appearing in the dropdowns.</div>
+  `;
+}
+function addCategory(kind){
+  const input = document.getElementById(kind==="income"?"new-income-cat":"new-expense-cat");
+  const val = input.value.trim();
+  if (!val) return;
+  if (!state.categories[kind].includes(val)) state.categories[kind].push(val);
+  saveState(); render();
+}
+function removeCategory(kind, name){
+  state.categories[kind] = state.categories[kind].filter(c=>c!==name);
+  saveState(); render();
+}
+
+/* ============================= INIT ============================= */
+window.addEventListener("beforeunload", () => { clearTimeout(saveTimer); commitSave(false); });
+loadState();
+</script>
+</body>
+</html>
