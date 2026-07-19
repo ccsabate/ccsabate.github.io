@@ -270,6 +270,7 @@ function defaultState(){
     currency: "₱",
     activeTab: "dashboard",
     dashboardYear: 2026,
+    dashboardMonth: new Date().getMonth()+1,
     budgetMonth: 1,
     budgetYear: 2026,
     categories: {
@@ -317,13 +318,12 @@ let saveStatus = "idle"; // idle | saved | error
       the same way you'd treat a shared password.
 ---------------------------------------------------------------------------- */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCAZLSqJylYoRvQPj_C1scDLbbcXFqf8BU",
-  authDomain: "budget-tracker-28dd7.firebaseapp.com",
-  projectId: "budget-tracker-28dd7",
-  storageBucket: "budget-tracker-28dd7.firebasestorage.app",
-  messagingSenderId: "988472828920",
-  appId: "1:988472828920:web:1a87dcb4fa722901eaac0d",
-  measurementId: "G-4TF9FQHD3L"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const SYNC_CODE_KEY = "ledger_sync_code_v1";
@@ -589,6 +589,12 @@ function restoreData(fileInput){
 }
 
 /* ============================= HELPERS ============================= */
+function todayStr(){
+  const d = new Date();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 function fmt(n){
   n = Number(n)||0;
   const sign = n<0 ? "-" : "";
@@ -680,10 +686,24 @@ function render(){
 /* ============================= DASHBOARD ============================= */
 function renderDashboard(){
   const year = state.dashboardYear;
+  const month = state.dashboardMonth;
   const income = ytdSum("Income", year);
   const expense = ytdSum("Expense", year);
   const net = income - expense;
   const rate = income ? (net/income*100) : 0;
+
+  // Average monthly expenses: total expenses / number of months in the year that actually have data
+  const monthsWithData = new Set(
+    state.transactions
+      .filter(t=>{ const d=new Date(t.date+"T00:00:00"); return d.getFullYear()===year; })
+      .map(t=> new Date(t.date+"T00:00:00").getMonth()+1)
+  ).size || 1;
+  const avgMonthlyExpense = expense / monthsWithData;
+
+  // Savings for the selected month
+  const monthIncome = monthSum("Income", month, year);
+  const monthExpense = monthSum("Expense", month, year);
+  const monthSavings = monthIncome - monthExpense;
 
   const savedTotal = state.savingsGoals.reduce((s,g)=>s+(+g.saved||0),0);
 
@@ -724,6 +744,10 @@ function renderDashboard(){
       <div class="page-desc">Your financial snapshot at a glance — income, spending, savings and net worth.</div>
     </div>
     <div class="controls">
+      <label style="font-size:12px;color:var(--muted);">Month</label>
+      <select onchange="state.dashboardMonth=+this.value; saveState(); render();">
+        ${monthNames.map((m,i)=>`<option value="${i+1}" ${month===i+1?'selected':''}>${m}</option>`).join("")}
+      </select>
       <label style="font-size:12px;color:var(--muted);">Year</label>
       <input type="number" value="${year}" style="width:80px" onchange="state.dashboardYear=+this.value; saveState(); render();">
     </div>
@@ -734,6 +758,8 @@ function renderDashboard(){
     <div class="kpi-card"><div class="kpi-label">Total Expenses (YTD)</div><div class="kpi-value neg">${fmt(expense)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Net Savings (YTD)</div><div class="kpi-value ${net<0?'neg':''}">${fmt(net)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Savings Rate</div><div class="kpi-value">${pct(rate)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg. Monthly Expenses</div><div class="kpi-value neg">${fmt(avgMonthlyExpense)}</div><div class="kpi-sub">across ${monthsWithData} month${monthsWithData===1?'':'s'} with activity</div></div>
+    <div class="kpi-card"><div class="kpi-label">Savings — ${monthNames[month-1]} ${year}</div><div class="kpi-value ${monthSavings<0?'neg':''}">${fmt(monthSavings)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Savings Progress</div><div class="kpi-value">${fmt(savedTotal)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Current Net Worth</div><div class="kpi-value ${nwVal<0?'neg':''}">${fmt(nwVal)}</div></div>
   </div>
@@ -788,7 +814,7 @@ function renderTransactions(){
       <tbody>${body}</tbody>
     </table>
     <div class="add-row">
-      <input type="date" id="tx-date" value="2026-01-01">
+      <input type="date" id="tx-date" value="${todayStr()}">
       <input type="text" id="tx-desc" class="desc" placeholder="Description">
       <select id="tx-cat" class="cat">${catOptions}</select>
       <select id="tx-type" class="short" onchange="syncTxCategory()">
@@ -808,7 +834,7 @@ function syncTxCategory(){
   document.getElementById("tx-cat").innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
 }
 function addTransaction(){
-  const date = document.getElementById("tx-date").value || "2026-01-01";
+  const date = document.getElementById("tx-date").value || todayStr();
   const description = document.getElementById("tx-desc").value || "Untitled";
   const category = document.getElementById("tx-cat").value;
   const type = document.getElementById("tx-type").value;
