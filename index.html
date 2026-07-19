@@ -760,7 +760,7 @@ function renderDashboard(){
     <div class="kpi-card"><div class="kpi-label">Net Savings (YTD)</div><div class="kpi-value ${net<0?'neg':''}">${fmt(net)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Savings Rate</div><div class="kpi-value">${pct(rate)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg. Monthly Expenses</div><div class="kpi-value neg">${fmt(avgMonthlyExpense)}</div><div class="kpi-sub">across ${monthsWithData} month${monthsWithData===1?'':'s'} with activity</div></div>
-    <div class="kpi-card"><div class="kpi-label">Savings — ${monthNames[month-1]} ${year}</div><div class="kpi-value ${monthSavings<0?'neg':''}">${fmt(monthSavings)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Net — ${monthNames[month-1]} ${year}</div><div class="kpi-value ${monthSavings<0?'neg':''}">${fmt(monthSavings)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Savings Progress</div><div class="kpi-value">${fmt(savedTotal)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Current Net Worth</div><div class="kpi-value ${nwVal<0?'neg':''}">${fmt(nwVal)}</div></div>
   </div>
