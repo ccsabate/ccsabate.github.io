@@ -831,7 +831,7 @@ function renderBudget(){
   const rows = cats.map(({c,type})=>{
     const budgeted = state.budgets[c]||0;
     const actual = txSum(c, type, month, year);
-    const diff = actual - budgeted;
+    const diff = budgeted - actual;
     const usedPct = budgeted ? Math.min(200,(actual/budgeted*100)) : (actual>0?100:0);
     if (type==="Income"){ totalBudgetInc+=budgeted; totalActualInc+=actual; } else { totalBudgetExp+=budgeted; totalActualExp+=actual; }
     return `
@@ -840,7 +840,7 @@ function renderBudget(){
       <td class="text">${type}</td>
       <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value)"></td>
       <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
-      <td class="${diff<0 && type==='Expense' ? 'amt-neg' : (diff<0 && type==='Income' ? 'amt-neg':'amt-pos')}">${fmt(diff)}</td>
+      <td class="${diff<0 ? 'amt-neg' : 'amt-pos'}">${fmt(diff)}</td>
       <td>
         <div class="progress-wrap">
           <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,usedPct)}%;${usedPct>100?'background:var(--brick);':''}"></div></div>
@@ -873,9 +873,9 @@ function renderBudget(){
       <thead><tr><th>Category</th><th>Type</th><th>Budgeted</th><th>Actual</th><th>Difference</th><th>% of Budget</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td class="text">Total Income</td><td></td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td><td>${fmt(totalActualInc-totalBudgetInc)}</td><td></td></tr>
-        <tr><td class="text">Total Expenses</td><td></td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td><td>${fmt(totalActualExp-totalBudgetExp)}</td><td></td></tr>
-        <tr><td class="text">Net (Income − Expenses)</td><td></td><td>${fmt(netB)}</td><td>${fmt(netA)}</td><td>${fmt(netA-netB)}</td><td></td></tr>
+        <tr><td class="text">Total Income</td><td></td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td><td>${fmt(totalBudgetInc-totalActualInc)}</td><td></td></tr>
+        <tr><td class="text">Total Expenses</td><td></td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td><td>${fmt(totalBudgetExp-totalActualExp)}</td><td></td></tr>
+        <tr><td class="text">Net (Income − Expenses)</td><td></td><td>${fmt(netB)}</td><td>${fmt(netA)}</td><td>${fmt(netB-netA)}</td><td></td></tr>
       </tfoot>
     </table>
   </div>
