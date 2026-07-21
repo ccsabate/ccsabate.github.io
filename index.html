@@ -221,14 +221,20 @@ input:focus, select:focus{
   border-color:var(--gold);
 }
 
-/* Force native iOS date input to behave like standard text inputs */
+/* Hard override for native iOS date input internal styling constraints */
 input[type="date"] {
-  -webkit-appearance: none;
-  appearance: none;
-  text-align: left;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  text-align: left !important;
+  width: 100% !important;
+  display: block !important;
 }
 input[type="date"]::-webkit-date-and-time-value {
-  text-align: left;
+  text-align: left !important;
+  width: 100% !important;
+  margin: 0 !important;
+  display: block !important;
 }
 
 /* iOS Tactile Buttons */
@@ -437,7 +443,7 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
     box-sizing: border-box !important;
   }
   .add-row .btn {
-    border-radius: var(--radius-sm) !important; /* Forces the Add Button to shape-match the squircle inputs */
+    border-radius: var(--radius-sm) !important;
     justify-content: center;
   }
 
