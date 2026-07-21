@@ -195,7 +195,11 @@ td input:focus, td select:focus{border-color:var(--gold);background:#fff;}
   align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
 .connect-overlay.show{display:flex;}
 .connect-card{background:var(--card);border-radius:14px;padding:28px 26px;max-width:380px;width:100%;
-  box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;max-height:90vh;overflow-y:auto;}
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;max-height:90vh;overflow-y:auto;position:relative;}
+.connect-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
+  border:none;background:var(--paper);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.connect-close:hover{background:var(--brick-soft);color:var(--brick);}
 .connect-sub{font-size:12.5px;color:var(--muted);margin:8px 0 18px 0;line-height:1.5;}
 .connect-section{margin-bottom:14px;}
 .connect-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:8px;}
@@ -452,7 +456,6 @@ function openSyncPanel(){
   document.getElementById("connect-overlay").classList.add("show");
 }
 function closeSyncPanel(){
-  if (!syncCode) return; // must be connected to dismiss
   document.getElementById("connect-overlay").classList.remove("show");
 }
 
@@ -463,6 +466,7 @@ function renderConnectOverlay(){
     ? `<div class="connect-error" style="margin-bottom:10px;">⚠ Sync isn't configured yet. Open this file and fill in FIREBASE_CONFIG near the top of the &lt;script&gt; tag — setup steps are in the comment right above it.</div>` : "";
   if (!syncCode){
     card.innerHTML = `
+      <button class="connect-close" onclick="closeSyncPanel()" title="Close" aria-label="Close">✕</button>
       <div class="brand-title" style="color:var(--ledger);font-size:20px;">Ledger &amp; Goal</div>
       <div class="connect-sub">Connect this device to sync your data across your phone, laptop, and anywhere else you open this link.</div>
       ${setupWarning}
@@ -479,6 +483,7 @@ function renderConnectOverlay(){
     `;
   } else {
     card.innerHTML = `
+      <button class="connect-close" onclick="closeSyncPanel()" title="Close" aria-label="Close">✕</button>
       <div class="brand-title" style="color:var(--ledger);font-size:20px;">Synced ✓</div>
       <div class="connect-sub">This device is connected. Enter this same code on any other device to see the same data everywhere.</div>
       <div class="sync-code-box">${syncCode}</div>
@@ -489,7 +494,6 @@ function renderConnectOverlay(){
         <button class="btn secondary" onclick="connectExisting()">Switch</button>
       </div>
       <div class="connect-error" id="connect-error"></div>
-      <button class="btn backup-btn" onclick="closeSyncPanel()">Close</button>
       <button class="btn danger" style="width:100%;justify-content:center;padding:8px;" onclick="disconnectSync()">Disconnect this device</button>
     `;
   }
@@ -788,14 +792,14 @@ function renderDashboard(){
 /* ============================= TRANSACTIONS ============================= */
 function renderTransactions(){
   const rows = [...state.transactions].sort((a,b)=> b.date.localeCompare(a.date));
-  const catOptions = allCategories().map(c=>`<option value="${c}">${c}</option>`).join("");
+  const catOptions = state.categories.expense.map(c=>`<option value="${c}">${c}</option>`).join("");
 
   const body = rows.length ? rows.map(t => `
     <tr>
       <td class="text">${t.date}</td>
       <td class="text">${t.description}</td>
-      <td class="text">${t.category}</td>
       <td class="text">${t.type}</td>
+      <td class="text">${t.category}</td>
       <td class="${t.type==='Income'?'amt-pos':'amt-neg'}">${t.type==='Income'?'+':'-'}${fmt(t.amount)}</td>
       <td class="text">${t.account||""}</td>
       <td><button class="btn danger" onclick="deleteTransaction('${t.id}')">✕</button></td>
@@ -810,18 +814,20 @@ function renderTransactions(){
   </div>
   <div class="section">
     <div class="section-title">Log</div>
+    <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Account</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Category</th><th>Amount</th><th>Account</th><th></th></tr></thead>
       <tbody>${body}</tbody>
     </table>
+    </div>
     <div class="add-row">
       <input type="date" id="tx-date" value="${todayStr()}">
       <input type="text" id="tx-desc" class="desc" placeholder="Description">
-      <select id="tx-cat" class="cat">${catOptions}</select>
       <select id="tx-type" class="short" onchange="syncTxCategory()">
         <option value="Expense">Expense</option>
         <option value="Income">Income</option>
       </select>
+      <select id="tx-cat" class="cat">${catOptions}</select>
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
       <input type="text" id="tx-acct" class="short" placeholder="Account">
       <button class="btn" onclick="addTransaction()">+ Add</button>
@@ -960,10 +966,12 @@ function renderSavings(){
   </div>
   <div class="section">
     <div class="section-title">Savings Overview</div>
+    <div style="overflow-x:auto;">
     <table>
       <thead><tr><th>Goal</th><th>Target</th><th>Starting</th><th>Monthly</th><th>Saved</th><th>Left</th><th>Progress</th><th>Est. Months</th><th>Est. Date</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="10" class="empty-msg">No savings goals yet.</td></tr>'}</tbody>
     </table>
+    </div>
     <div class="add-row">
       <button class="btn" onclick="addSaving()">+ Add Goal</button>
     </div>
@@ -1025,10 +1033,12 @@ function renderDebt(){
   </div>
   <div class="section">
     <div class="section-title">Debts</div>
+    <div style="overflow-x:auto;">
     <table>
       <thead><tr><th>Debt</th><th>Type</th><th>Original</th><th>Current</th><th>Rate</th><th>Min. Payment</th><th>Extra</th><th>Total / mo</th><th>Paid Off</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="10" class="empty-msg">No debts logged — nice, or add one to track.</td></tr>'}</tbody>
     </table>
+    </div>
     <div class="add-row">
       <button class="btn" onclick="addDebt()">+ Add Debt</button>
     </div>
