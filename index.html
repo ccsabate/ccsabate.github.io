@@ -86,6 +86,10 @@ td.text{font-family:'Inter',sans-serif;font-size:13px;}
 tbody tr:nth-child(odd){background:#FCFBF6;}
 tbody tr:hover{background:var(--gold-soft);}
 tfoot td{font-weight:700;border-top:2px solid var(--ledger);border-bottom:none;background:#F5F1E4;}
+.budget-totals{margin-top:6px;border-top:2px solid var(--ledger);}
+.budget-totals td{font-weight:700;background:#F5F1E4;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.budget-totals td.text{font-family:'Inter',sans-serif;}
+.budget-totals td:nth-child(2),.budget-totals td:nth-child(3){width:120px;}
 td input, td select{width:100%;min-width:70px;border:1px solid transparent;background:transparent;font-family:inherit;font-size:inherit;padding:4px 6px;border-radius:5px;}
 td input:hover, td select:hover{border-color:var(--line);}
 td input:focus, td select:focus{border-color:var(--gold);background:#fff;}
@@ -902,14 +906,19 @@ function renderBudget(){
   </div>
   <div class="section">
     <div class="section-title">${monthNames[month-1]} ${year}</div>
+    <div style="overflow-x:auto;">
     <table>
       <thead><tr><th>Category</th><th>Type</th><th>Budgeted</th><th>Actual</th><th>Difference</th><th>% of Budget</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot>
-        <tr><td class="text">Total Income</td><td></td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td><td></td><td></td></tr>
-        <tr><td class="text">Total Expenses</td><td></td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td><td></td><td></td></tr>
-        <tr><td class="text">Net (Income − Expenses)</td><td></td><td>${fmt(netB)}</td><td>${fmt(netA)}</td><td></td><td></td></tr>
-      </tfoot>
+    </table>
+    </div>
+    <table class="budget-totals">
+      <thead><tr><th></th><th>Budgeted</th><th>Actual</th></tr></thead>
+      <tbody>
+        <tr><td class="text">Total Income</td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td></tr>
+        <tr><td class="text">Total Expenses</td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td></tr>
+        <tr><td class="text">Net (Income − Expenses)</td><td>${fmt(netB)}</td><td>${fmt(netA)}</td></tr>
+      </tbody>
     </table>
   </div>
   `;
