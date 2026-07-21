@@ -24,9 +24,9 @@
   --ledger: #1F3D2B;
   --ledger-light: #2E5940;
   --gold: #B8902E;
-  --gold-soft: rgba(184, 144, 46, 0.12);
+  --gold-soft: rgba(184, 144, 46, 0.12); /* Mimics #EFE3C2 on paper */
   --brick: #A8442F;
-  --brick-soft: rgba(168, 68, 47, 0.12);
+  --brick-soft: rgba(168, 68, 47, 0.12); /* Mimics #F3DFD8 on paper */
   --ink: #1D1E18;
   --muted: #6E7260;
   --line: rgba(228, 223, 207, 0.85);
@@ -74,13 +74,13 @@
     /* ---------- Dark Mode ---------- */
     --paper: #0D110F;
     --card: rgba(28, 36, 30, 0.65);
-    --ledger: #76A88A;
+    --ledger: #76A88A;       /* Brighter sage green for visibility */
     --ledger-light: #527A62;
-    --gold: #D4A842;
+    --gold: #D4A842;         /* Slightly brighter gold */
     --gold-soft: rgba(212, 168, 66, 0.15);
-    --brick: #E26D57;
+    --brick: #E26D57;        /* Brighter red for visibility */
     --brick-soft: rgba(226, 109, 87, 0.15);
-    --ink: #EAE8DF;
+    --ink: #EAE8DF;          /* Off-white text */
     --muted: #8B8E81;
     --line: rgba(255, 255, 255, 0.12);
     
@@ -91,7 +91,7 @@
     --sidebar-text: #EAE8DF;
     --sidebar-border: rgba(255, 255, 255, 0.08);
     --nav-hover: rgba(255, 255, 255, 0.08);
-    --nav-active-text: #0D110F;
+    --nav-active-text: #0D110F; /* Keep text dark against gold button */
     
     --btn-primary-bg: var(--ledger);
     --btn-primary-text: #0D110F;
@@ -199,6 +199,7 @@ body{
 select, input[type=text], input[type=number], input[type=date]{
   font-family:'Inter',sans-serif;font-size:13px;
   padding:9px 13px;
+  margin:0; /* Explicit zero margin to fix iOS intrinsic padding */
   border:1px solid var(--input-border);
   border-radius:var(--radius-sm);
   background:var(--input-bg);
@@ -220,8 +221,10 @@ input:focus, select:focus{
   border-color:var(--gold);
 }
 
-/* Force native iOS date input text to align left like regular text inputs */
+/* Force native iOS date input to behave like standard text inputs */
 input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
   text-align: left;
 }
 input[type="date"]::-webkit-date-and-time-value {
@@ -231,7 +234,9 @@ input[type="date"]::-webkit-date-and-time-value {
 /* iOS Tactile Buttons */
 .btn{
   font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-  padding:10px 18px;border-radius:999px;
+  padding:10px 18px;
+  margin:0;
+  border-radius:999px;
   border:1px solid var(--btn-primary-bg);
   background:var(--btn-primary-bg);color:var(--btn-primary-text);
   cursor:pointer;display:inline-flex;align-items:center;gap:6px;
@@ -423,10 +428,18 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
   table{font-size:12px;}
   th, td{padding:8px 6px;}
   
-  /* Update add-row to ensure all elements including the button are exactly 100% */
+  /* Enforce exact uniform alignment across all Add Row elements on mobile */
   .add-row{flex-direction:column;align-items:stretch;}
-  .add-row input, .add-row select, .add-row .desc, .add-row .cat, .add-row .amt, .add-row .short, .add-row .btn{width:100%;}
-  .add-row .btn{justify-content:center;}
+  .add-row > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .add-row .btn {
+    border-radius: var(--radius-sm) !important; /* Forces the Add Button to shape-match the squircle inputs */
+    justify-content: center;
+  }
 
   /* iOS Dynamic Floating Glass Tabbar */
   .mobile-tabbar{
