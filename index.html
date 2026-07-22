@@ -82,14 +82,14 @@
     --brick-soft: rgba(226, 109, 87, 0.15);
     --ink: #EAE8DF;
     --muted: #8B8E81;
-    --line: rgba(255, 255, 255, 0.12);
+    --line: rgba(255, 255, 255, 0.08);
     
     --glass-bg: rgba(28, 36, 30, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.03); 
     
-    --sidebar-bg: rgba(18, 24, 20, 0.65);
+    --sidebar-bg: rgba(18, 24, 20, 0.65); 
     --sidebar-text: #EAE8DF;
-    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-border: rgba(255, 255, 255, 0.05);
     --nav-hover: rgba(255, 255, 255, 0.08);
     --nav-active-text: #0D110F;
     
@@ -101,7 +101,7 @@
     --input-bg: rgba(0, 0, 0, 0.25);
     --input-border: rgba(255, 255, 255, 0.15);
     
-    --kpi-shadow: rgba(0, 0, 0, 0.25);
+    --kpi-shadow: transparent;
     --table-foot-bg: rgba(255, 255, 255, 0.05);
     --tag-bg: rgba(255, 255, 255, 0.08);
     
@@ -145,12 +145,8 @@ body{
   backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
   border-right:1px solid var(--sidebar-border);
-  box-shadow:8px 0 36px rgba(0,0,0,0.12);
+  box-shadow: none; /* Removed the sidebar shadow here */
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease;
-}
-.sidebar::before{
-  content:""; position:absolute; top:0; left:0; right:0; height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);
 }
 
 .brand-header {
@@ -1884,6 +1880,27 @@ window.addEventListener("resize", () => {
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
 });
+
+// Auto-collapse sidebar on scroll or clicking outside (desktop/tablet only)
+window.addEventListener("scroll", () => {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
+    sidebar.classList.add('collapsed');
+    localStorage.setItem('sidebar_collapsed', true);
+  }
+}, { passive: true });
+
+document.addEventListener("click", (e) => {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
+    // If click is outside the sidebar entirely
+    if (!sidebar.contains(e.target)) {
+      sidebar.classList.add('collapsed');
+      localStorage.setItem('sidebar_collapsed', true);
+    }
+  }
+});
+
 loadState();
 </script>
 </body>
