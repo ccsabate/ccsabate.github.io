@@ -216,10 +216,9 @@ body{
 
 /* ---------- Main Content ---------- */
 .main{
-  flex:1;padding:36px 44px;max-width:1200px;margin-left:240px;
-  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  flex:1;padding:36px 44px;max-width:1200px;
+  margin-left:78px; /* Fixed width to allow sidebar overlap */
 }
-.main.collapsed { margin-left: 78px; }
 
 .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
 .page-title{
@@ -531,9 +530,18 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
   .mobile-tabbar .nav-btn{
     position:relative;z-index:2;flex:1 1 0%;flex-direction:column;gap:2px;padding:10px 2px;
     border-radius:999px;font-size:9.5px;text-align:center;line-height:1.15;min-width:0;
-    background:none !important;box-shadow:none !important;
+    /* FORCE NO GRAY PILL OUTLINES ON DRAG/TAP */
+    background:transparent !important; border-color:transparent !important; box-shadow:none !important;
+    -webkit-tap-highlight-color: transparent !important;
     transition:color .2s ease;
     color: var(--sidebar-text);
+  }
+  .mobile-tabbar .nav-btn:hover, 
+  .mobile-tabbar .nav-btn:active, 
+  .mobile-tabbar .nav-btn:focus {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
   }
   
   .mobile-tabbar .nav-btn span:not(.nav-icon){display:none;}
@@ -681,7 +689,7 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
 </head>
 <body>
 <div class="app">
-  <div class="sidebar" id="sidebar">
+  <div class="sidebar collapsed" id="sidebar">
     <div class="brand-header">
       <div class="brand">
         <div class="brand-title">
@@ -929,9 +937,7 @@ function subscribeToDoc(){
 /* ---------- UI Sidebar Toggle ---------- */
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
-  const main = document.getElementById('main');
   sidebar.classList.toggle('collapsed');
-  main.classList.toggle('collapsed');
   const isCollapsed = sidebar.classList.contains('collapsed');
   localStorage.setItem('sidebar_collapsed', isCollapsed);
 }
@@ -1032,11 +1038,12 @@ function renderConnectOverlay(){
 }
 
 function loadState(){
-  // Restore Sidebar Layout state
+  // Restore Sidebar Layout state (Default is collapsed if explicitly not false)
   const sidebarState = localStorage.getItem('sidebar_collapsed');
-  if (sidebarState === 'true') {
+  if (sidebarState === 'false') {
+    document.getElementById('sidebar').classList.remove('collapsed');
+  } else {
     document.getElementById('sidebar').classList.add('collapsed');
-    document.getElementById('main').classList.add('collapsed');
   }
 
   initFirebase();
