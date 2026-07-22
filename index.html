@@ -24,9 +24,9 @@
   --ledger: #1F3D2B;
   --ledger-light: #2E5940;
   --gold: #B8902E;
-  --gold-soft: rgba(184, 144, 46, 0.12); /* Mimics #EFE3C2 on paper */
+  --gold-soft: rgba(184, 144, 46, 0.12);
   --brick: #A8442F;
-  --brick-soft: rgba(168, 68, 47, 0.12); /* Mimics #F3DFD8 on paper */
+  --brick-soft: rgba(168, 68, 47, 0.12);
   --ink: #1D1E18;
   --muted: #6E7260;
   --line: rgba(228, 223, 207, 0.85);
@@ -74,13 +74,13 @@
     /* ---------- Dark Mode ---------- */
     --paper: #0D110F;
     --card: rgba(28, 36, 30, 0.65);
-    --ledger: #76A88A;       /* Brighter sage green for visibility */
+    --ledger: #76A88A;
     --ledger-light: #527A62;
-    --gold: #D4A842;         /* Slightly brighter gold */
+    --gold: #D4A842;
     --gold-soft: rgba(212, 168, 66, 0.15);
-    --brick: #E26D57;        /* Brighter red for visibility */
+    --brick: #E26D57;
     --brick-soft: rgba(226, 109, 87, 0.15);
-    --ink: #EAE8DF;          /* Off-white text */
+    --ink: #EAE8DF;
     --muted: #8B8E81;
     --line: rgba(255, 255, 255, 0.12);
     
@@ -91,7 +91,7 @@
     --sidebar-text: #EAE8DF;
     --sidebar-border: rgba(255, 255, 255, 0.08);
     --nav-hover: rgba(255, 255, 255, 0.08);
-    --nav-active-text: #0D110F; /* Keep text dark against gold button */
+    --nav-active-text: #0D110F;
     
     --btn-primary-bg: var(--ledger);
     --btn-primary-text: #0D110F;
@@ -129,13 +129,13 @@ body{
 }
 .app{display:flex;min-height:100vh;}
 
-/* ---------- Sidebar (iOS Ultra-Glass) ---------- */
+/* ---------- Sidebar (iOS Ultra-Glass & Collapsible) ---------- */
 .sidebar{
   width:240px;
   background:var(--sidebar-bg);
   color:var(--sidebar-text);
   flex-shrink:0;
-  padding:28px 0 20px 0;
+  padding:24px 0 20px 0;
   display:flex;
   flex-direction:column;
   position:fixed;
@@ -146,20 +146,50 @@ body{
   -webkit-backdrop-filter:var(--glass-blur);
   border-right:1px solid var(--sidebar-border);
   box-shadow:8px 0 36px rgba(0,0,0,0.12);
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease;
 }
 .sidebar::before{
-  content:"";
-  position:absolute;
-  top:0;left:0;right:0;height:1px;
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);
 }
-.brand{padding:0 22px 20px 22px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;}
+
+.brand-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 0 22px 20px 22px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 12px; transition: all 0.3s ease;
+}
+.brand { margin: 0; padding: 0; border: none; }
 .brand-title{
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',sans-serif;
   font-size:21px;font-weight:700;letter-spacing:-0.025em;line-height:1.2;
 }
 .brand-sub{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(243,239,225,0.6);font-weight:500;margin-top:4px;}
+
+.logo-only { display: none; }
+.hamburger {
+  background: transparent; border: none; color: var(--sidebar-text);
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s; margin-top: -2px; margin-right: -8px;
+}
+.hamburger:hover { background: rgba(255,255,255,0.12); }
+
+/* Collapsed Sidebar State */
+.sidebar.collapsed { width: 78px; }
+.sidebar.collapsed .brand-header {
+  flex-direction: column-reverse; align-items: center;
+  padding: 0 10px 20px 10px; gap: 20px;
+}
+.sidebar.collapsed .full-text { display: none; }
+.sidebar.collapsed .logo-only { display: block; margin-top: 4px; }
+.sidebar.collapsed .hamburger { margin: 0; }
+.sidebar.collapsed .nav-text { display: none; }
+.sidebar.collapsed .nav-btn { justify-content: center; padding: 12px 0; border-radius: 16px; margin: 0 6px; }
+.sidebar.collapsed .sidebar-footer { padding: 14px 12px 18px 12px; }
+.sidebar.collapsed .save-indicator { display: none; }
+.sidebar.collapsed .more-btn { padding: 12px 0; justify-content: center; border-radius: 16px; margin-top: auto; }
+.sidebar.collapsed .more-btn .nav-text { display: none; }
+.sidebar.collapsed .more-btn svg { margin: 0; }
 
 /* Navigation Buttons */
 .nav{display:flex;flex-direction:column;gap:4px;padding:8px 12px;}
@@ -182,10 +212,15 @@ body{
   box-shadow:0 6px 18px rgba(184,144,46,0.38), 0 1px 0 rgba(255,255,255,0.4) inset;
 }
 .nav-icon{width:18px;height:18px;flex-shrink:0;}
-.sidebar-footer{margin-top:auto;padding:14px 22px 18px 22px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(243,239,225,0.7);}
+.sidebar-footer{margin-top:auto;padding:14px 22px 18px 22px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(243,239,225,0.7); display:flex; flex-direction:column;}
 
 /* ---------- Main Content ---------- */
-.main{flex:1;padding:36px 44px;max-width:1200px;margin-left:240px;}
+.main{
+  flex:1;padding:36px 44px;max-width:1200px;margin-left:240px;
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.main.collapsed { margin-left: 78px; }
+
 .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
 .page-title{
   font-family:'Fraunces',serif;
@@ -199,7 +234,7 @@ body{
 select, input[type=text], input[type=number], input[type=date]{
   font-family:'Inter',sans-serif;font-size:13px;
   padding:9px 13px;
-  margin:0; /* Explicit zero margin to fix iOS intrinsic padding */
+  margin:0; 
   border:1px solid var(--input-border);
   border-radius:var(--radius-sm);
   background:var(--input-bg);
@@ -221,8 +256,7 @@ input:focus, select:focus{
   border-color:var(--gold);
 }
 
-/* Force native iOS date input to behave like standard text inputs 
-   without breaking the internal shadow DOM bounding box */
+/* Force native iOS date input to behave like standard text inputs */
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
@@ -269,7 +303,7 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 .btn.danger:hover{background:var(--brick-soft);}
 
-/* ---------- KPI Cards (Liquid Glass Squircles) ---------- */
+/* ---------- KPI Cards ---------- */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
 .kpi-card{
   background:var(--card);
@@ -360,6 +394,27 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
 .add-row .amt{width:100px;}
 .add-row .short{width:100px;}
 
+/* Smooth Slide for TX form */
+#add-tx-form {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 1px dashed transparent;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#add-tx-form.open {
+  max-height: 500px;
+  opacity: 1;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom-color: var(--line);
+}
+
 /* Charts Grid */
 .chart-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
 @media (max-width:900px){.chart-grid{grid-template-columns:1fr;}}
@@ -419,7 +474,7 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
   .mobile-header{display:block;}
   .main{
     padding:16px 16px calc(96px + env(safe-area-inset-bottom)) 16px;
-    padding-top:calc(88px + env(safe-area-inset-top));max-width:100%;margin-left:0;
+    padding-top:calc(88px + env(safe-area-inset-top));max-width:100%;margin-left:0 !important;
   }
   .page-header{align-items:flex-start;}
   .kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;}
@@ -434,7 +489,7 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
   .add-row > * {
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important; /* Extremely important for Safari flex-items */
+    min-width: 0 !important; 
     margin: 0 !important;
     box-sizing: border-box !important;
   }
@@ -517,6 +572,7 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.error{background:rgba(168,68,47,0.92);}
+.toast.offline{background:rgba(184,144,46,0.92); color:#1D1E18;} /* Gold styling for offline alerts */
 
 /* ---------- Sync & Connect Overlay ---------- */
 .connect-overlay{
@@ -625,17 +681,34 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
 </head>
 <body>
 <div class="app">
-  <div class="sidebar">
-    <div class="brand">
-      <div class="brand-title">Ledger &amp; Goal</div>
-      <div class="brand-sub">Personal Finance Tracker</div>
+  <div class="sidebar" id="sidebar">
+    <div class="brand-header">
+      <div class="brand">
+        <div class="brand-title">
+          <span class="full-text">Ledger &amp; Goal</span>
+          <span class="logo-only" title="Ledger & Goal">
+            <!-- App Logo SVG -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" stroke="var(--gold)"></circle>
+              <path d="M9 7v10" stroke="currentColor"></path>
+              <path d="M9 7h4.5a3 3 0 0 1 0 6H9" stroke="currentColor"></path>
+              <line x1="7" y1="10" x2="15" y2="10" stroke="currentColor"></line>
+              <line x1="7" y1="12.5" x2="14" y2="12.5" stroke="currentColor"></line>
+            </svg>
+          </span>
+        </div>
+        <div class="brand-sub full-text">Personal Finance Tracker</div>
+      </div>
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu" title="Toggle Sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
     </div>
     <div class="nav" id="nav"></div>
     <div class="sidebar-footer">
       <div class="save-indicator" style="margin-bottom:9px;">— unsaved —</div>
-      <button class="more-btn" onclick="toggleActionsMenu(event)" aria-haspopup="true" aria-label="More actions">
+      <button class="more-btn" onclick="toggleActionsMenu(event)" aria-haspopup="true" aria-label="More actions" title="More">
         <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="16" cy="10" r="1.7"/></svg>
-        More
+        <span class="nav-text" style="margin-left:6px;">More</span>
       </button>
     </div>
   </div>
@@ -727,7 +800,20 @@ function defaultState(){
 }
 
 let state = defaultState();
-let saveStatus = "idle"; // idle | saved | error
+let saveStatus = "idle"; // idle | saved | error | offline
+
+/* ---------- OFFLINE SUPPORT EVENT LISTENERS ---------- */
+window.addEventListener('online', () => {
+  if (syncCode) {
+    showToast_(false, "Back online! Syncing...");
+    commitSave(false);
+  }
+});
+window.addEventListener('offline', () => {
+  saveStatus = "offline";
+  updateSaveIndicator();
+  showToast_(false, "Offline. Changes saved locally.", true);
+});
 
 /* ---------- FIREBASE SETUP ------------------------------------------------- */
 const FIREBASE_CONFIG = {
@@ -767,7 +853,7 @@ function initFirebase(){
 function docRef(code){ return db.collection("financeTrackers").doc(code); }
 
 function genCode(){
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; 
   let c = "";
   for (let i=0;i<8;i++) c += chars[Math.floor(Math.random()*chars.length)];
   return c;
@@ -818,7 +904,7 @@ function connectToCode(code){
   renderConnectOverlay();
   document.getElementById("connect-overlay").classList.remove("show");
   updateSyncCodeDisplay();
-  saveStatus = "saved";
+  saveStatus = navigator.onLine ? "saved" : "offline";
   updateSaveIndicator();
 }
 
@@ -831,13 +917,23 @@ function subscribeToDoc(){
     if (json === lastPushedJSON) return; // ignore the echo of our own write
     state = Object.assign(defaultState(), data);
     render();
-    saveStatus = "saved";
+    saveStatus = navigator.onLine ? "saved" : "offline";
     updateSaveIndicator();
   }, err => {
     console.error("Sync listener error", err);
     saveStatus = "error";
     updateSaveIndicator();
   });
+}
+
+/* ---------- UI Sidebar Toggle ---------- */
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  sidebar.classList.toggle('collapsed');
+  main.classList.toggle('collapsed');
+  const isCollapsed = sidebar.classList.contains('collapsed');
+  localStorage.setItem('sidebar_collapsed', isCollapsed);
 }
 
 /* ---------- "More" actions menu (Save / Sync / Backup / Restore) ---------- */
@@ -936,6 +1032,13 @@ function renderConnectOverlay(){
 }
 
 function loadState(){
+  // Restore Sidebar Layout state
+  const sidebarState = localStorage.getItem('sidebar_collapsed');
+  if (sidebarState === 'true') {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('main').classList.add('collapsed');
+  }
+
   initFirebase();
   renderConnectOverlay();
   const savedCode = localStorage.getItem(SYNC_CODE_KEY);
@@ -955,13 +1058,25 @@ function saveState(){
 }
 
 function commitSave(showToast){
+  // 1. Always ensure local persistent copy saves first
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ /* best-effort local cache */ }
+  
+  // 2. Check strict network connectivity for sync
+  if (!navigator.onLine) {
+    saveStatus = "offline";
+    updateSaveIndicator();
+    if (showToast) showToast_(false, "Offline. Saved locally.", true);
+    return;
+  }
+
+  // 3. Prevent save to cloud if not connected/synced
   if (!syncCode || !db){
     saveStatus = "error";
     updateSaveIndicator();
     if (showToast) showToast_(true, "Not connected — tap 🔗 Manage Sync first.");
     return;
   }
+
   const json = JSON.stringify(state);
   lastPushedJSON = json;
   docRef(syncCode).set(state)
@@ -983,18 +1098,21 @@ function manualSave(){
   commitSave(true);
 }
 
-function showToast_(isError, message){
+function showToast_(isError, message, isOfflineWarning = false){
   const t = document.getElementById("toast");
   if (!t) return;
   t.textContent = message || (isError ? "⚠ Something went wrong." : "✓ Saved");
-  t.className = "toast show" + (isError ? " error" : "");
+  t.className = "toast show" + (isError ? " error" : "") + (isOfflineWarning ? " offline" : "");
   clearTimeout(showToast_.timer);
-  showToast_.timer = setTimeout(()=>{ t.className = "toast"; }, 2200);
+  showToast_.timer = setTimeout(()=>{ t.className = "toast"; }, 2500);
 }
 
 function updateSaveIndicator(){
   document.querySelectorAll(".save-indicator").forEach(el=>{
-    el.textContent = saveStatus==="saved" ? "All changes synced" : (saveStatus==="error" ? "Not synced — tap 🔗" : "");
+    if (saveStatus === "saved") el.textContent = "All changes synced";
+    else if (saveStatus === "offline") el.textContent = "Offline (Saved locally)";
+    else if (saveStatus === "error") el.textContent = "Not synced — tap 🔗";
+    else el.textContent = "";
   });
 }
 
@@ -1107,8 +1225,9 @@ const tabs = [
 function renderNav(){
   const nav = document.getElementById("nav");
   nav.innerHTML = tabs.map(t => `
-    <button class="nav-btn ${state.activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')">
-      <span class="nav-icon">${t.icon}</span> ${t.label}
+    <button class="nav-btn ${state.activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')" title="${t.label}">
+      <span class="nav-icon">${t.icon}</span> 
+      <span class="nav-text">${t.label}</span>
     </button>`).join("");
 
   const mobileNav = document.getElementById("mobile-nav");
@@ -1363,7 +1482,7 @@ function renderTransactions(){
       <td class="${t.type==='Income'?'amt-pos':'amt-neg'}">${t.type==='Income'?'+':'-'}${fmt(t.amount)}</td>
       <td class="text">${t.account||""}</td>
       <td><button class="btn danger" onclick="deleteTransaction('${t.id}')">✕</button></td>
-    </tr>`).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one below.</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
 
   return `
   <div class="page-header">
@@ -1373,14 +1492,12 @@ function renderTransactions(){
     </div>
   </div>
   <div class="section">
-    <div class="section-title">Log</div>
-    <div style="overflow-x:auto;">
-    <table>
-      <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Category</th><th>Amount</th><th>Account</th><th></th></tr></thead>
-      <tbody>${body}</tbody>
-    </table>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+      <div class="section-title" style="margin-bottom:0;">Log</div>
+      <button class="btn secondary" onclick="toggleAddTx()">+ Add</button>
     </div>
-    <div class="add-row">
+    
+    <div class="add-row" id="add-tx-form">
       <input type="date" id="tx-date" value="${todayStr()}">
       <input type="text" id="tx-desc" class="desc" placeholder="Description">
       <select id="tx-type" class="short" onchange="syncTxCategory()">
@@ -1390,10 +1507,21 @@ function renderTransactions(){
       <select id="tx-cat" class="cat">${catOptions}</select>
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
       <input type="text" id="tx-acct" class="short" placeholder="Account">
-      <button class="btn" onclick="addTransaction()">+ Add</button>
+      <button class="btn" onclick="addTransaction()">Save</button>
+    </div>
+    
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Category</th><th>Amount</th><th>Account</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
     </div>
   </div>
   `;
+}
+function toggleAddTx(){
+  const form = document.getElementById("add-tx-form");
+  if(form) form.classList.toggle("open");
 }
 function syncTxCategory(){
   const type = document.getElementById("tx-type").value;
