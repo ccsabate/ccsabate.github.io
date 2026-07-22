@@ -145,7 +145,7 @@ body{
   backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
   border-right:1px solid var(--sidebar-border);
-  box-shadow: none; /* Removed the sidebar shadow here */
+  box-shadow: none; 
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -678,6 +678,43 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
   }
   .ios-menu-cancel:active{filter:brightness(0.9);}
 }
+
+/* ---------- iOS Style Modal Alert ---------- */
+.ios-alert-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--overlay-bg);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.ios-alert-backdrop.show { opacity: 1; pointer-events: auto; }
+.ios-alert {
+  width: 270px;
+  background: var(--menu-bg);
+  backdrop-filter: blur(44px) saturate(190%); -webkit-backdrop-filter: blur(44px) saturate(190%);
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+  text-align: center;
+  display: flex; flex-direction: column;
+  transform: scale(1.1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ios-alert-backdrop.show .ios-alert { transform: scale(1); }
+.ios-alert-text { padding: 20px 16px; border-bottom: 1px solid rgba(128,128,128,0.2); }
+.ios-alert-title { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.ios-alert-msg { font-size: 13px; color: var(--ink); line-height: 1.3; font-weight: 400; }
+.ios-alert-actions { display: flex; }
+.ios-alert-btn {
+  flex: 1; padding: 12px; border: none; background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 17px; cursor: pointer; transition: background 0.15s ease;
+}
+.ios-alert-btn:active { background: rgba(128,128,128,0.15); }
+.ios-alert-btn.cancel { color: #007AFF; font-weight: 400; border-right: 1px solid rgba(128,128,128,0.2); }
+@media (prefers-color-scheme: dark) { .ios-alert-btn.cancel { color: #0A84FF; } }
+.ios-alert-btn.confirm { color: var(--brick); font-weight: 600; }
 </style>
 <!-- Firebase (for cross-device sync) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -764,6 +801,20 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
       <div class="ios-menu-status"><span class="save-indicator" style="text-transform:none;">— unsaved —</span></div>
     </div>
     <button class="ios-menu-cancel" onclick="closeActionsMenu()">Cancel</button>
+  </div>
+  
+  <!-- Custom iOS Alert -->
+  <div class="ios-alert-backdrop" id="ios-alert-backdrop">
+    <div class="ios-alert">
+      <div class="ios-alert-text">
+        <div class="ios-alert-title" id="ios-alert-title">Confirm</div>
+        <div class="ios-alert-msg" id="ios-alert-msg">Are you sure?</div>
+      </div>
+      <div class="ios-alert-actions">
+        <button class="ios-alert-btn cancel" onclick="closeConfirmAlert()">Cancel</button>
+        <button class="ios-alert-btn confirm" onclick="executeConfirm()">Delete</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -964,6 +1015,24 @@ function closeActionsMenu(){
   document.getElementById("menu-backdrop").classList.remove("show");
 }
 document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeActionsMenu(); });
+
+/* ---------- Custom iOS Alert Handlers ---------- */
+let alertCallback = null;
+
+function showConfirmAlert(title, msg, callback) {
+  document.getElementById('ios-alert-title').textContent = title;
+  document.getElementById('ios-alert-msg').textContent = msg;
+  alertCallback = callback;
+  document.getElementById('ios-alert-backdrop').classList.add('show');
+}
+function closeConfirmAlert() {
+  document.getElementById('ios-alert-backdrop').classList.remove('show');
+  setTimeout(() => { alertCallback = null; }, 250);
+}
+function executeConfirm() {
+  if (alertCallback) alertCallback();
+  closeConfirmAlert();
+}
 
 function updateSyncCodeDisplay(){
   document.querySelectorAll(".sync-code-display").forEach(el=>{ el.textContent = syncCode || "—"; });
@@ -1542,8 +1611,14 @@ function addTransaction(){
   saveState(); render();
 }
 function deleteTransaction(id){
-  state.transactions = state.transactions.filter(t=>t.id!==id);
-  saveState(); render();
+  showConfirmAlert(
+    "Delete Transaction",
+    "Are you sure you want to delete this transaction?",
+    () => {
+      state.transactions = state.transactions.filter(t=>t.id!==id);
+      saveState(); render();
+    }
+  );
 }
 
 /* ============================= BUDGET ============================= */
@@ -1683,7 +1758,12 @@ function addSaving(){
   state.savingsGoals.push({id:uid(), name:"New Goal", goal:0, starting:0, monthly:0, saved:0});
   saveState(); render();
 }
-function deleteSaving(id){ state.savingsGoals = state.savingsGoals.filter(g=>g.id!==id); saveState(); render(); }
+function deleteSaving(id){
+  showConfirmAlert("Delete Goal", "Are you sure you want to delete this savings goal?", () => {
+    state.savingsGoals = state.savingsGoals.filter(g=>g.id!==id); 
+    saveState(); render();
+  }); 
+}
 
 /* ============================= DEBT ============================= */
 function renderDebt(){
@@ -1750,7 +1830,12 @@ function addDebt(){
   state.debts.push({id:uid(), name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0});
   saveState(); render();
 }
-function deleteDebt(id){ state.debts = state.debts.filter(d=>d.id!==id); saveState(); render(); }
+function deleteDebt(id){
+  showConfirmAlert("Delete Debt", "Are you sure you want to delete this debt entry?", () => {
+    state.debts = state.debts.filter(d=>d.id!==id); 
+    saveState(); render();
+  });
+}
 
 /* ============================= NET WORTH ============================= */
 function renderNetWorth(){
@@ -1823,7 +1908,12 @@ function addNW(){
   state.netWorth.push({id:uid(), month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0});
   saveState(); render();
 }
-function deleteNW(id){ state.netWorth = state.netWorth.filter(e=>e.id!==id); saveState(); render(); }
+function deleteNW(id){
+  showConfirmAlert("Delete Entry", "Are you sure you want to delete this net worth record?", () => {
+    state.netWorth = state.netWorth.filter(e=>e.id!==id); 
+    saveState(); render();
+  });
+}
 
 /* ============================= CATEGORIES ============================= */
 function renderCategories(){
@@ -1870,8 +1960,10 @@ function addCategory(kind){
   saveState(); render();
 }
 function removeCategory(kind, name){
-  state.categories[kind] = state.categories[kind].filter(c=>c!==name);
-  saveState(); render();
+  showConfirmAlert("Remove Category", `Remove "${name}" from your ${kind} categories?`, () => {
+    state.categories[kind] = state.categories[kind].filter(c=>c!==name);
+    saveState(); render();
+  });
 }
 
 /* ============================= INIT ============================= */
