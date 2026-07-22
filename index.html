@@ -20,7 +20,8 @@
 :root {
   /* ---------- Light Mode (Default) ---------- */
   --paper: #FAF7EF;
-  --card: rgba(255, 255, 255, 0.78);
+  --card: rgba(255, 255, 255, 0.55);
+  --card-hover: rgba(255, 255, 255, 0.7);
   --ledger: #1F3D2B;
   --ledger-light: #2E5940;
   --gold: #B8902E;
@@ -33,9 +34,13 @@
   
   --glass-bg: rgba(255, 255, 255, 0.65);
   --glass-border: rgba(255, 255, 255, 0.75);
-  --glass-blur: blur(40px) saturate(200%);
+  --glass-blur: blur(48px) saturate(180%);
   
-  --sidebar-bg: rgba(31, 61, 43, 0.52);
+  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  --card-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.7), inset 0 1px 2px rgba(255, 255, 255, 1);
+  
+  --sidebar-bg: rgba(31, 61, 43, 0.45);
+  --sidebar-shadow: 1px 0 32px rgba(0, 0, 0, 0.08), inset -1px 0 0 rgba(255, 255, 255, 0.15), inset 1px 0 2px rgba(255, 255, 255, 0.3);
   --sidebar-text: #F3EFE1;
   --sidebar-border: rgba(255, 255, 255, 0.18);
   --nav-hover: rgba(255, 255, 255, 0.12);
@@ -73,7 +78,8 @@
   :root {
     /* ---------- Dark Mode ---------- */
     --paper: #0D110F;
-    --card: rgba(28, 36, 30, 0.65);
+    --card: rgba(45, 55, 50, 0.25);
+    --card-hover: rgba(45, 55, 50, 0.35);
     --ledger: #76A88A;
     --ledger-light: #527A62;
     --gold: #D4A842;
@@ -86,8 +92,13 @@
     
     --glass-bg: rgba(28, 36, 30, 0.65);
     --glass-border: rgba(255, 255, 255, 0.03); 
+    --glass-blur: blur(48px) saturate(180%);
     
-    --sidebar-bg: rgba(18, 24, 20, 0.65); 
+    --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    --card-shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    
+    --sidebar-bg: rgba(18, 24, 20, 0.45); 
+    --sidebar-shadow: 1px 0 32px rgba(0, 0, 0, 0.4), inset -1px 0 0 rgba(255, 255, 255, 0.04), inset 1px 0 1px rgba(255, 255, 255, 0.08);
     --sidebar-text: #EAE8DF;
     --sidebar-border: rgba(255, 255, 255, 0.05);
     --nav-hover: rgba(255, 255, 255, 0.08);
@@ -121,11 +132,17 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 body{
   margin:0;
-  background:var(--paper);
+  background-color: var(--paper);
+  /* Ambient Orbs to bring the glass blur to life */
+  background-image: 
+    radial-gradient(circle at 10% 20%, var(--gold-soft), transparent 30%),
+    radial-gradient(circle at 90% 80%, var(--brick-soft), transparent 30%),
+    radial-gradient(circle at 50% 50%, rgba(118, 168, 138, 0.05), transparent 40%);
+  background-attachment: fixed;
   color:var(--ink);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;
   -webkit-font-smoothing:antialiased;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 .app{display:flex;min-height:100vh;}
 
@@ -144,9 +161,9 @@ body{
   z-index:100;
   backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border-right:1px solid var(--sidebar-border);
-  box-shadow: none; 
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease;
+  border-right: none;
+  box-shadow: var(--sidebar-shadow);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .brand-header {
@@ -301,21 +318,22 @@ input[type="date"]::-webkit-date-and-time-value {
 /* ---------- KPI Cards ---------- */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
 .kpi-card{
-  background:var(--card);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius-md);
-  padding:18px 20px 18px 20px;
-  position:relative;overflow:hidden;
-  box-shadow:0 10px 28px var(--kpi-shadow), 0 1px 2px rgba(0,0,0,0.03);
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
-  transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+  background: var(--card);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 18px 20px 18px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }
-@media (prefers-color-scheme: light) {
-  .kpi-card { box-shadow: 0 10px 28px var(--kpi-shadow), 0 1px 2px rgba(0,0,0,0.03), 0 1px 0 rgba(255,255,255,0.9) inset; }
-  .kpi-card:hover { box-shadow: 0 14px 36px rgba(38,41,31,0.07), 0 1px 0 rgba(255,255,255,1) inset; }
+.kpi-card:hover {
+  transform: translateY(-2px);
+  background: var(--card-hover);
+  box-shadow: var(--card-shadow-hover);
 }
-.kpi-card:hover{transform:translateY(-2px);}
 .kpi-label{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;}
 .kpi-value{font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;margin-top:6px;color:var(--ledger);letter-spacing:-0.03em;}
 .kpi-value.neg{color:var(--brick);}
@@ -323,17 +341,14 @@ input[type="date"]::-webkit-date-and-time-value {
 
 /* ---------- Cards / Sections ---------- */
 .section{
-  background:var(--card);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius-lg);
-  padding:22px 24px;margin-bottom:24px;
-  box-shadow:0 12px 32px var(--kpi-shadow);
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
-  transition: background 0.3s ease, border-color 0.3s ease;
-}
-@media (prefers-color-scheme: light) {
-  .section { box-shadow: 0 12px 32px var(--kpi-shadow), 0 1px 0 rgba(255,255,255,0.9) inset; }
+  background: var(--card);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 22px 24px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 .section-title{
   font-family:'Fraunces',serif;
