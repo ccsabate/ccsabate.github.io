@@ -552,7 +552,9 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
     backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
     border:1px solid var(--mobile-chrome-border);
     box-shadow:0 16px 40px rgba(0,0,0,0.28);
-    overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;
+    overflow:hidden;
+    /* iOS Touch Defenses */
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
     transition:transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s ease, background 0.3s ease;
     will-change:transform;
   }
@@ -1472,6 +1474,16 @@ function setupTabbarDrag(bar){
   let candidateId = state.activeTab;
 
   const getButtons = () => Array.from(bar.querySelectorAll(".nav-btn"));
+
+  // iOS Safari Lock Defense: Absolutely force WebKit to yield touch priority immediately without waiting for scroll momentum to halt
+  bar.addEventListener("touchstart", (e) => {
+    e.stopPropagation();
+  }, { passive: false });
+
+  bar.addEventListener("touchmove", (e) => {
+    e.preventDefault(); // Forces iOS to surrender 100% of gesture control to our slider instead of page scrolling
+    e.stopPropagation();
+  }, { passive: false });
 
   const updateDrag = (clientX) => {
     const btns = getButtons();
