@@ -168,7 +168,6 @@
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  /* Strip web scrollbars globally */
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -181,14 +180,12 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
-  /* APPLE HIG GUIDELINE 4.2: Prevent web-like text selection and callout popups */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   overflow-x: hidden;
 }
 
-/* Allow selection ONLY inside actual form fields */
 input, select, textarea {
   -webkit-user-select: auto;
   user-select: auto;
@@ -235,7 +232,6 @@ input, select, textarea {
   cursor: pointer; padding: 4px; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s; margin-top: -2px; margin-right: -8px;
-  /* HIG: Minimum 44x44pt touch target */
   min-width: 44px; min-height: 44px;
 }
 .hamburger:hover { background: rgba(255,255,255,0.12); }
@@ -268,7 +264,6 @@ input, select, textarea {
   font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
   text-align: left; cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
-  /* HIG: Minimum 44x44pt touch target */
   min-height: 44px;
 }
 .nav-btn:hover { background: var(--nav-hover); border-color: rgba(255,255,255,0.15); }
@@ -299,7 +294,7 @@ input, select, textarea {
 
 /* iOS Controls & Inputs */
 select, input[type=text], input[type=number], input[type=date] {
-  font-family: 'Inter', sans-serif; font-size: 14px; /* HIG: 14px+ prevents iOS Safari auto-zoom on input focus */
+  font-family: 'Inter', sans-serif; font-size: 14px;
   padding: 10px 14px;
   margin: 0; 
   border: 1px solid var(--input-border);
@@ -310,7 +305,7 @@ select, input[type=text], input[type=number], input[type=date] {
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 1px 2px rgba(0,0,0,0.03) inset;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 44px; /* HIG: 44px touch target */
+  min-height: 44px;
 }
 @media (prefers-color-scheme: light) {
   :root:not(.theme-dark) select, :root:not(.theme-dark) input[type=text], :root:not(.theme-dark) input[type=number], :root:not(.theme-dark) input[type=date] {
@@ -346,7 +341,6 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 2px 8px rgba(31,61,43,0.22), 0 1px 0 rgba(255,255,255,0.2) inset;
-  /* HIG: Minimum 44x44pt touch target */
   min-height: 44px; min-width: 44px;
 }
 .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
@@ -528,7 +522,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 .mobile-header-row { display: flex; justify-content: space-between; align-items: center; }
 .mobile-header-actions { display: flex; gap: 10px; align-items: center; }
 .mobile-icon-btn {
-  padding: 0; font-size: 15px; width: 44px; height: 44px; /* HIG: 44px touch target */
+  padding: 0; font-size: 15px; width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
 }
 .mobile-tabbar { display: none; }
@@ -568,7 +562,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     border: 1px solid var(--mobile-chrome-border);
     box-shadow: 0 16px 40px rgba(0,0,0,0.28);
     overflow: hidden;
-    /* iOS Safari Touch Defenses */
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     transition: transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s ease, background 0.3s ease;
     will-change: transform;
@@ -592,22 +585,52 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   :root.theme-light .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
 
+  /* 1. Lock the button flexbox to dead-center with zero padding */
   .mobile-tabbar .nav-btn {
-    position: relative; z-index: 2; flex: 1 1 0%; flex-direction: column; gap: 2px;
-    padding: 8px 2px; border-radius: 999px; font-size: 9.5px; text-align: center;
-    line-height: 1.15; min-width: 0;
-    background: transparent !important; border-color: transparent !important; box-shadow: none !important;
+    position: relative; 
+    z-index: 2; 
+    flex: 1 1 0%; 
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important; 
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    border-radius: 999px; 
+    min-height: 48px;
+    background: transparent !important; 
+    border-color: transparent !important; 
+    box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    transition: color .2s ease;
     color: var(--sidebar-text);
-    min-height: 48px; /* HIG Touch target assurance */
+    transition: color .2s ease;
   }
+  
   .mobile-tabbar .nav-btn:hover, .mobile-tabbar .nav-btn:active, .mobile-tabbar .nav-btn:focus {
     background: transparent !important; border-color: transparent !important; box-shadow: none !important;
   }
   
+  /* 2. Override the 18px desktop height so the box matches the icon */
+  .mobile-tabbar .nav-btn .nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    transform: none;
+  }
+
+  /* 3. Size the SVG cleanly inside its new centered box */
+  .mobile-tabbar .nav-btn .nav-icon svg { 
+    width: 22px !important; 
+    height: 22px !important; 
+    display: block !important; 
+    margin: 0 !important; 
+  }
+  
   .mobile-tabbar .nav-btn span:not(.nav-icon) { display: none; }
-  .mobile-tabbar .nav-btn .nav-icon svg { width: 26px; height: 26px; display: block; margin: 0 auto; }
   .mobile-tabbar .nav-btn.active { color: var(--nav-active-text); }
   
   .mobile-tabbar.dragging {
@@ -618,7 +641,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     :root:not(.theme-dark) .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
   }
   :root.theme-light .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
-  .mobile-tabbar.dragging .nav-btn.active .nav-icon { transform: scale(1.15); }
+  .mobile-tabbar.dragging .nav-btn.active .nav-icon { transform: scale(1.15) !important; }
 }
 
 /* ---------- Save Controls & Toasts ---------- */
@@ -659,7 +682,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   max-height: 90vh; overflow-y: auto; position: relative;
 }
 .connect-close {
-  position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; /* HIG 44px */
+  position: absolute; top: 14px; right: 14px; width: 44px; height: 44px;
   border-radius: 50%; border: none; background: var(--paper); color: var(--muted);
   font-size: 16px; line-height: 1; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -687,7 +710,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   background: transparent; border: none; color: var(--sidebar-text);
   font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
   cursor: pointer; transition: background .15s ease, transform .12s ease;
-  min-height: 44px; /* HIG touch target */
+  min-height: 44px;
 }
 .more-btn:hover { background: var(--nav-hover); }
 .more-btn:active { transform: scale(0.95); }
@@ -736,7 +759,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; background: none; border: none;
   border-bottom: 1px solid rgba(128,128,128,0.15); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--ink);
   text-align: left; cursor: pointer; transition: background .12s ease;
-  min-height: 48px; /* HIG 44px+ touch target */
+  min-height: 48px;
 }
 .ios-menu-item:last-child { border-bottom: none; }
 .ios-menu-item:active { background: var(--nav-hover); }
@@ -794,7 +817,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   flex: 1; padding: 14px; border: none; background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   font-size: 17px; cursor: pointer; transition: background 0.15s ease;
-  min-height: 48px; /* HIG 44px+ touch target */
+  min-height: 48px;
 }
 .ios-alert-btn:active { background: rgba(128,128,128,0.15); }
 .ios-alert-btn.cancel { color: #007AFF; font-weight: 400; border-right: 1px solid rgba(128,128,128,0.2); }
@@ -803,7 +826,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 .ios-alert-btn.confirm { color: var(--brick); font-weight: 600; }
 </style>
 <script>
-/* Immediate Theme Bootstrapper (Prevents flash of wrong theme on load) */
+/* Immediate Theme Bootstrapper */
 function applyTheme() {
   const mode = localStorage.getItem('ledger_theme_pref') || 'system';
   const root = document.documentElement;
@@ -827,10 +850,8 @@ function applyTheme() {
 applyTheme();
 
 /* ============================= UNIVERSAL HAPTIC BRIDGE ============================= */
-// Automatically triggers tactile physical feedback on Apple hardware (or web fallbacks)
 function triggerHaptic(style = 'light') {
   try {
-    // 1. Check for native iOS Capacitor Bridge
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
       const Haptics = window.Capacitor.Plugins.Haptics;
       if (style === 'light') Haptics.impact({ style: 'LIGHT' });
@@ -838,16 +859,15 @@ function triggerHaptic(style = 'light') {
       else if (style === 'heavy') Haptics.impact({ style: 'HEAVY' });
       return;
     }
-    // 2. Fallback to standard web vibration API
     if (navigator.vibrate) {
       if (style === 'light') navigator.vibrate(4);
       else if (style === 'medium') navigator.vibrate(8);
       else if (style === 'heavy') navigator.vibrate([10, 20, 10]);
     }
-  } catch(e) { /* Silently fail on non-supported hardware */ }
+  } catch(e) { }
 }
 </script>
-<!-- Firebase (for cross-device sync) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
@@ -943,7 +963,6 @@ function triggerHaptic(style = 'light') {
     <button class="ios-menu-cancel" onclick="closeActionsMenu(); triggerHaptic('light');">Cancel</button>
   </div>
   
-  <!-- Custom iOS Alert -->
   <div class="ios-alert-backdrop" id="ios-alert-backdrop">
     <div class="ios-alert">
       <div class="ios-alert-text">
@@ -995,9 +1014,8 @@ function defaultState(){
 }
 
 let state = defaultState();
-let saveStatus = "idle"; // idle | saved | error | offline
+let saveStatus = "idle"; 
 
-/* ---------- Theme Handling ---------- */
 function setThemePreference(mode) {
   localStorage.setItem('ledger_theme_pref', mode);
   applyTheme();
@@ -1015,7 +1033,6 @@ function updateThemeUI() {
   });
 }
 
-/* ---------- OFFLINE SUPPORT EVENT LISTENERS ---------- */
 window.addEventListener('online', () => {
   if (syncCode) {
     showToast_(false, "Back online! Syncing...");
@@ -1028,7 +1045,6 @@ window.addEventListener('offline', () => {
   showToast_(false, "Offline. Changes saved locally.", true);
 });
 
-/* ---------- FIREBASE SETUP ------------------------------------------------- */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCAZLSqJylYoRvQPj_C1scDLbbcXFqf8BU",
   authDomain: "budget-tracker-28dd7.firebaseapp.com",
@@ -1055,7 +1071,7 @@ function initFirebase(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){ /* ok if unsupported */ }
+    try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){ }
     firebaseReady = true;
   }catch(e){
     console.error("Firebase init failed", e);
@@ -1143,7 +1159,6 @@ function subscribeToDoc(){
   });
 }
 
-/* ---------- UI Sidebar Toggle ---------- */
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   sidebar.classList.toggle('collapsed');
@@ -1151,7 +1166,6 @@ function toggleSidebar() {
   localStorage.setItem('sidebar_collapsed', isCollapsed);
 }
 
-/* ---------- "More" actions menu (Save / Sync / Backup / Restore) ---------- */
 function toggleActionsMenu(e){
   const menu = document.getElementById("actions-menu");
   if (menu.classList.contains("show")) closeActionsMenu();
@@ -1179,7 +1193,6 @@ function closeActionsMenu(){
 }
 document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeActionsMenu(); });
 
-/* ---------- Custom iOS Alert Handlers ---------- */
 let alertCallback = null;
 
 function showConfirmAlert(title, msg, callback) {
@@ -1349,7 +1362,6 @@ function updateSaveIndicator(){
   });
 }
 
-/* ---------- Backup / Restore ---------- */
 function backupData(){
   const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -1381,7 +1393,6 @@ function restoreData(fileInput){
   fileInput.value = "";
 }
 
-/* ============================= HELPERS ============================= */
 function todayStr(){
   const d = new Date();
   const mm = String(d.getMonth()+1).padStart(2,"0");
@@ -1506,7 +1517,6 @@ function switchTab(id){
   render(); 
 }
 
-/* ---------- Smooth Dragging + iOS Elastic Edge Bounce ---------- */
 function setupTabbarDrag(bar){
   if (bar.dataset.dragBound) return;
   bar.dataset.dragBound = "1";
@@ -2166,7 +2176,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// Automatically detect native iOS Xcode wrappers and optimize hardware chrome
 if (window.Capacitor && window.Capacitor.Plugins) {
   try {
     const { StatusBar, SplashScreen } = window.Capacitor.Plugins;
