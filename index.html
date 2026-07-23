@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ledger &amp; Goal">
-<!-- Auto-switching theme colors for the browser/OS UI chrome -->
+<!-- Auto-switching theme colors for browser/OS UI chrome -->
 <meta name="theme-color" id="theme-color-light" media="(prefers-color-scheme: light)" content="#FAF7EF">
 <meta name="theme-color" id="theme-color-dark" media="(prefers-color-scheme: dark)" content="#0D110F">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -118,7 +118,7 @@
   --menu-cancel-bg: rgba(45, 60, 50, 0.9);
 }
 
-/* ---------- System Dark Mode (Active only if not explicitly forced Light) ---------- */
+/* ---------- System Dark Mode ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
     --paper: #0D110F;
@@ -164,32 +164,54 @@
   }
 }
 
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{
-  margin:0;
-  background-color: var(--paper);
-  color:var(--ink);
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;
-  -webkit-font-smoothing:antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+/* ---------- iOS HIG Strict Rules & Web-Tell Stripping ---------- */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  /* Strip web scrollbars globally */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-.app{display:flex;min-height:100vh;}
+*::-webkit-scrollbar { display: none; }
+
+body {
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  /* APPLE HIG GUIDELINE 4.2: Prevent web-like text selection and callout popups */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overflow-x: hidden;
+}
+
+/* Allow selection ONLY inside actual form fields */
+input, select, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+  -webkit-touch-callout: default;
+}
+
+.app { display: flex; min-height: 100vh; }
 
 /* ---------- Sidebar (iOS Ultra-Glass & Collapsible) ---------- */
-.sidebar{
-  width:240px;
-  background:var(--sidebar-bg);
-  color:var(--sidebar-text);
-  flex-shrink:0;
-  padding:24px 0 20px 0;
-  display:flex;
-  flex-direction:column;
-  position:fixed;
-  top:0;left:0;bottom:0;
-  overflow-y:auto;overflow-x:hidden;
-  z-index:100;
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
+.sidebar {
+  width: 240px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  flex-shrink: 0;
+  padding: 24px 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto; overflow-x: hidden;
+  z-index: 100;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-right: none;
   box-shadow: var(--sidebar-shadow);
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, box-shadow 0.3s ease;
@@ -201,11 +223,11 @@ body{
   margin-bottom: 12px; transition: all 0.3s ease;
 }
 .brand { margin: 0; padding: 0; border: none; }
-.brand-title{
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',sans-serif;
-  font-size:21px;font-weight:700;letter-spacing:-0.025em;line-height:1.2;
+.brand-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  font-size: 21px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.2;
 }
-.brand-sub{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(243,239,225,0.6);font-weight:500;margin-top:4px;}
+.brand-sub { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: rgba(243,239,225,0.6); font-weight: 500; margin-top: 4px; }
 
 .logo-only { display: none; }
 .hamburger {
@@ -213,6 +235,8 @@ body{
   cursor: pointer; padding: 4px; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s; margin-top: -2px; margin-right: -8px;
+  /* HIG: Minimum 44x44pt touch target */
+  min-width: 44px; min-height: 44px;
 }
 .hamburger:hover { background: rgba(255,255,255,0.12); }
 
@@ -234,56 +258,59 @@ body{
 .sidebar.collapsed .more-btn svg { margin: 0; }
 
 /* Navigation Buttons */
-.nav{display:flex;flex-direction:column;gap:4px;padding:8px 12px;}
-.nav-btn{
-  display:flex;align-items:center;gap:12px;
-  padding:11px 16px;
-  border-radius:999px;
-  background:none;border:1px solid transparent;
-  color:var(--sidebar-text);
-  font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;
-  text-align:left;cursor:pointer;
-  transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);
+.nav { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: none; border: 1px solid transparent;
+  color: var(--sidebar-text);
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
+  text-align: left; cursor: pointer;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  /* HIG: Minimum 44x44pt touch target */
+  min-height: 44px;
 }
-.nav-btn:hover{background:var(--nav-hover);border-color:rgba(255,255,255,0.15);}
-.nav-btn:active{transform:scale(0.96);}
-.nav-btn.active{
-  background:var(--gold);
-  color:var(--nav-active-text);
-  font-weight:600;
-  box-shadow:0 6px 18px rgba(184,144,46,0.38), 0 1px 0 rgba(255,255,255,0.4) inset;
+.nav-btn:hover { background: var(--nav-hover); border-color: rgba(255,255,255,0.15); }
+.nav-btn:active { transform: scale(0.96); }
+.nav-btn.active {
+  background: var(--gold);
+  color: var(--nav-active-text);
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(184,144,46,0.38), 0 1px 0 rgba(255,255,255,0.4) inset;
 }
-.nav-icon{width:18px;height:18px;flex-shrink:0;}
-.sidebar-footer{margin-top:auto;padding:14px 22px 18px 22px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(243,239,225,0.7); display:flex; flex-direction:column;}
+.nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.sidebar-footer { margin-top: auto; padding: 14px 22px 18px 22px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: rgba(243,239,225,0.7); display: flex; flex-direction: column; }
 
 /* ---------- Main Content ---------- */
-.main{
-  flex:1;padding:36px 44px;max-width:1200px;
-  margin-left:78px; /* Fixed width to allow sidebar overlap */
+.main {
+  flex: 1; padding: 36px 44px; max-width: 1200px;
+  margin-left: 78px;
 }
 
-.page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
-.page-title{
-  font-family:'Fraunces',serif;
-  font-size:30px;font-weight:600;letter-spacing:-0.02em;
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
+.page-title {
+  font-family: 'Fraunces', serif;
+  font-size: 30px; font-weight: 600; letter-spacing: -0.02em;
 }
-.page-title .rule{display:block;width:48px;height:3px;background:var(--gold);margin-top:8px;border-radius:999px;}
-.page-desc{color:var(--muted);font-size:13px;margin-top:6px;max-width:540px;line-height:1.45;}
-.controls{display:flex;gap:10px;align-items:center;}
+.page-title .rule { display: block; width: 48px; height: 3px; background: var(--gold); margin-top: 8px; border-radius: 999px; }
+.page-desc { color: var(--muted); font-size: 13px; margin-top: 6px; max-width: 540px; line-height: 1.45; }
+.controls { display: flex; gap: 10px; align-items: center; }
 
 /* iOS Controls & Inputs */
-select, input[type=text], input[type=number], input[type=date]{
-  font-family:'Inter',sans-serif;font-size:13px;
-  padding:9px 13px;
-  margin:0; 
-  border:1px solid var(--input-border);
-  border-radius:var(--radius-sm);
-  background:var(--input-bg);
-  color:var(--ink);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  box-shadow:0 1px 2px rgba(0,0,0,0.03) inset;
-  transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+select, input[type=text], input[type=number], input[type=date] {
+  font-family: 'Inter', sans-serif; font-size: 14px; /* HIG: 14px+ prevents iOS Safari auto-zoom on input focus */
+  padding: 10px 14px;
+  margin: 0; 
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--ink);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03) inset;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 44px; /* HIG: 44px touch target */
 }
 @media (prefers-color-scheme: light) {
   :root:not(.theme-dark) select, :root:not(.theme-dark) input[type=text], :root:not(.theme-dark) input[type=number], :root:not(.theme-dark) input[type=date] {
@@ -294,69 +321,68 @@ select, input[type=text], input[type=number], input[type=date]{
   box-shadow: 0 1px 2px rgba(0,0,0,0.03) inset, 0 1px 0 rgba(255,255,255,0.8);
 }
 
-input:focus, select:focus{
-  outline:none;
-  background:var(--card);
-  box-shadow:0 0 0 3px var(--gold-soft), 0 2px 8px rgba(0,0,0,0.05);
-  border-color:var(--gold);
+input:focus, select:focus {
+  outline: none;
+  background: var(--card);
+  box-shadow: 0 0 0 3px var(--gold-soft), 0 2px 8px rgba(0,0,0,0.05);
+  border-color: var(--gold);
 }
 
-/* Force native iOS date input to behave like standard text inputs */
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
   text-align: left;
 }
-input[type="date"]::-webkit-date-and-time-value {
-  text-align: left;
-}
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 
 /* iOS Tactile Buttons */
-.btn{
-  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-  padding:10px 18px;
-  margin:0;
-  border-radius:999px;
-  border:1px solid var(--btn-primary-bg);
-  background:var(--btn-primary-bg);color:var(--btn-primary-text);
-  cursor:pointer;display:inline-flex;align-items:center;gap:6px;
-  transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow:0 2px 8px rgba(31,61,43,0.22), 0 1px 0 rgba(255,255,255,0.2) inset;
+.btn {
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  padding: 10px 18px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid var(--btn-primary-bg);
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(31,61,43,0.22), 0 1px 0 rgba(255,255,255,0.2) inset;
+  /* HIG: Minimum 44x44pt touch target */
+  min-height: 44px; min-width: 44px;
 }
-.btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
-.btn:active{transform:scale(0.95);box-shadow:0 1px 3px rgba(31,61,43,0.15);}
-.btn-icon{width:14px;height:14px;flex-shrink:0;display:inline-block;}
-.btn-icon svg{width:100%;height:100%;display:block;}
+.btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn:active { transform: scale(0.95); box-shadow: 0 1px 3px rgba(31,61,43,0.15); }
+.btn-icon { width: 14px; height: 14px; flex-shrink: 0; display: inline-block; }
+.btn-icon svg { width: 100%; height: 100%; display: block; }
 
-.btn.secondary{
-  background:var(--btn-secondary-bg);
-  color:var(--ledger);
-  border:1px solid var(--btn-secondary-border);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+.btn.secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--ledger);
+  border: 1px solid var(--btn-secondary-border);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 @media (prefers-color-scheme: light) {
   :root:not(.theme-dark) .btn.secondary { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,1) inset; }
 }
 :root.theme-light .btn.secondary { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,1) inset; }
+.btn.secondary:hover { background: var(--gold-soft); border-color: var(--gold); }
 
-.btn.secondary:hover{background:var(--gold-soft);border-color:var(--gold);}
-
-.btn.danger{
-  background:var(--tag-bg);color:var(--brick);
-  border:1px solid var(--brick-soft);
-  padding:5px 11px;font-size:12px;border-radius:999px;
-  box-shadow:0 1px 3px rgba(168,68,47,0.08);
+.btn.danger {
+  background: var(--tag-bg); color: var(--brick);
+  border: 1px solid var(--brick-soft);
+  padding: 6px 14px; font-size: 13px; border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(168,68,47,0.08);
+  min-height: 44px; min-width: 44px;
 }
-.btn.danger:hover{background:var(--brick-soft);}
+.btn.danger:hover { background: var(--brick-soft); }
 
 /* ---------- KPI Cards ---------- */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
-.kpi-card{
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
   background: var(--card);
   border: none;
   border-radius: var(--radius-md);
-  padding: 18px 20px 18px 20px;
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
   box-shadow: var(--card-shadow);
@@ -364,18 +390,14 @@ input[type="date"]::-webkit-date-and-time-value {
   -webkit-backdrop-filter: var(--glass-blur);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }
-.kpi-card:hover {
-  transform: translateY(-2px);
-  background: var(--card-hover);
-  box-shadow: var(--card-shadow-hover);
-}
-.kpi-label{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;}
-.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;margin-top:6px;color:var(--ledger);letter-spacing:-0.03em;}
-.kpi-value.neg{color:var(--brick);}
-.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.kpi-card:hover { transform: translateY(-2px); background: var(--card-hover); box-shadow: var(--card-shadow-hover); }
+.kpi-label { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.kpi-value { font-family: 'IBM Plex Mono', monospace; font-size: 23px; font-weight: 600; margin-top: 6px; color: var(--ledger); letter-spacing: -0.03em; }
+.kpi-value.neg { color: var(--brick); }
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
 /* ---------- Cards / Sections ---------- */
-.section{
+.section {
   background: var(--card);
   border: none;
   border-radius: var(--radius-lg);
@@ -385,368 +407,360 @@ input[type="date"]::-webkit-date-and-time-value {
   -webkit-backdrop-filter: var(--glass-blur);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
-.section-title{
-  font-family:'Fraunces',serif;
-  font-size:15px;font-weight:600;letter-spacing:.02em;
-  text-transform:uppercase;color:var(--ledger);
-  border-bottom:2px solid var(--gold);
-  display:inline-block;padding-bottom:5px;margin-bottom:18px;
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: 15px; font-weight: 600; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--ledger);
+  border-bottom: 2px solid var(--gold);
+  display: inline-block; padding-bottom: 5px; margin-bottom: 18px;
 }
 
 /* ---------- Tables ---------- */
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
-th{
-  text-align:left;font-size:10.5px;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--muted);font-weight:600;
-  padding:10px 12px;border-bottom:1px solid var(--line);
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+th {
+  text-align: left; font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
 }
-td{
-  padding:10px 12px;border-bottom:1px solid var(--line);
-  font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-  vertical-align:middle;
-  transition:background 0.15s ease;
+td {
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+  vertical-align: middle;
+  transition: background 0.15s ease;
 }
-td.text{font-family:'Inter',sans-serif;font-size:13px;}
-tbody tr:hover td{background:var(--gold-soft);}
-tfoot td{font-weight:700;border-top:2px solid var(--ledger);border-bottom:none;background:var(--table-foot-bg);}
+td.text { font-family: 'Inter', sans-serif; font-size: 13px; }
+tbody tr:hover td { background: var(--gold-soft); }
+tfoot td { font-weight: 700; border-top: 2px solid var(--ledger); border-bottom: none; background: var(--table-foot-bg); }
 
-.budget-totals{margin-top:10px;border-top:2px solid var(--ledger);border-radius:var(--radius-sm);overflow:hidden;}
-.budget-totals td{font-weight:700;background:var(--table-foot-bg);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
-.budget-totals td.text{font-family:'Inter',sans-serif;}
-.budget-totals td:nth-child(2),.budget-totals td:nth-child(3){width:120px;}
+.budget-totals { margin-top: 10px; border-top: 2px solid var(--ledger); border-radius: var(--radius-sm); overflow: hidden; }
+.budget-totals td { font-weight: 700; background: var(--table-foot-bg); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+.budget-totals td.text { font-family: 'Inter', sans-serif; }
+.budget-totals td:nth-child(2), .budget-totals td:nth-child(3) { width: 120px; }
 
-td input, td select{
-  width:100%;min-width:70px;border:1px solid transparent;
-  background:transparent;font-family:inherit;font-size:inherit;
-  padding:5px 7px;border-radius:8px;color:var(--ink);
+td input, td select {
+  width: 100%; min-width: 70px; border: 1px solid transparent;
+  background: transparent; font-family: inherit; font-size: inherit;
+  padding: 6px 8px; border-radius: 8px; color: var(--ink);
+  min-height: 38px;
 }
-td input:hover, td select:hover{border-color:var(--line);background:var(--tag-bg);}
-td input:focus, td select:focus{border-color:var(--gold);background:var(--card);}
-.amt-pos{color:var(--ledger-light);font-weight:600;}
-.amt-neg{color:var(--brick);font-weight:600;}
+td input:hover, td select:hover { border-color: var(--line); background: var(--tag-bg); }
+td input:focus, td select:focus { border-color: var(--gold); background: var(--card); }
+.amt-pos { color: var(--ledger-light); font-weight: 600; }
+.amt-neg { color: var(--brick); font-weight: 600; }
 
 /* Progress Bar */
-.progress-wrap{display:flex;align-items:center;gap:8px;min-width:120px;}
-.progress-track{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--ledger-light));border-radius:999px;}
-.progress-pct{font-size:11px;color:var(--muted);width:38px;text-align:right;font-weight:500;}
+.progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.progress-track { flex: 1; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--ledger-light)); border-radius: 999px; }
+.progress-pct { font-size: 11px; color: var(--muted); width: 38px; text-align: right; font-weight: 500; }
 
 /* Add Row Form */
-.add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);}
-.add-row input, .add-row select{padding:8px 10px;}
-.add-row .desc{width:170px;}
-.add-row .cat{width:150px;}
-.add-row .amt{width:100px;}
-.add-row .short{width:100px;}
+.add-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
+.add-row input, .add-row select { padding: 8px 10px; }
+.add-row .desc { width: 170px; }
+.add-row .cat { width: 150px; }
+.add-row .amt { width: 100px; }
+.add-row .short { width: 100px; }
 
 /* Smooth Slide for TX form */
 #add-tx-form {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: 1px dashed transparent;
+  max-height: 0; opacity: 0; overflow: hidden;
+  margin-top: 0; padding-top: 0; border-top: none;
+  margin-bottom: 0; padding-bottom: 0; border-bottom: 1px dashed transparent;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 #add-tx-form.open {
-  max-height: 500px;
-  opacity: 1;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom-color: var(--line);
+  max-height: 500px; opacity: 1; margin-bottom: 16px;
+  padding-bottom: 16px; border-bottom-color: var(--line);
 }
 
 /* Charts Grid */
-.chart-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
-@media (max-width:900px){.chart-grid{grid-template-columns:1fr;}}
-.donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
-.donut{width:150px;height:150px;border-radius:50%;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,0.06);}
-.legend{display:flex;flex-direction:column;gap:6px;font-size:12px;}
-.legend-item{display:flex;align-items:center;gap:8px;}
-.swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:180px;padding:10px 4px 0 4px;border-bottom:1px solid var(--line);}
-.bar-group{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
-.bar-pair{display:flex;align-items:flex-end;gap:2px;height:150px;}
-.bar{width:9px;border-radius:3px 3px 0 0;transition:height 0.3s cubic-bezier(0.16, 1, 0.3, 1);}
-.bar.income{background:var(--ledger-light);}
-.bar.expense{background:var(--brick);}
-.bar-month{font-size:10px;color:var(--muted);font-weight:500;}
-.line-chart-wrap{overflow-x:auto;}
+.chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+.donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.donut { width: 150px; height: 150px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding: 10px 4px 0 4px; border-bottom: 1px solid var(--line); }
+.bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 4px; }
+.bar-pair { display: flex; align-items: flex-end; gap: 2px; height: 150px; }
+.bar { width: 9px; border-radius: 3px 3px 0 0; transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.bar.income { background: var(--ledger-light); }
+.bar.expense { background: var(--brick); }
+.bar-month { font-size: 10px; color: var(--muted); font-weight: 500; }
+.line-chart-wrap { overflow-x: auto; }
 
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-@media (max-width:900px){.two-col{grid-template-columns:1fr;}}
-.tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
-.tag{
-  display:flex;align-items:center;gap:6px;
-  background:var(--tag-bg);border:1px solid var(--line);
-  border-radius:999px;padding:5px 8px 5px 14px;font-size:12.5px;
-  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.tag {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--tag-bg); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 8px 6px 14px; font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
-.tag button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 5px;border-radius:50%;}
-.tag button:hover{background:var(--brick-soft);color:var(--brick);}
-.empty-msg{color:var(--muted);font-size:13px;font-style:italic;padding:14px 4px;}
-.small-note{font-size:11.5px;color:var(--muted);margin-top:8px;}
+.tag button {
+  border: none; background: none; color: var(--muted);
+  cursor: pointer; font-size: 14px; line-height: 1;
+  padding: 4px 8px; border-radius: 50%;
+  min-height: 32px; min-width: 32px;
+}
+.tag button:hover { background: var(--brick-soft); color: var(--brick); }
+.empty-msg { color: var(--muted); font-size: 13px; font-style: italic; padding: 14px 4px; }
+.small-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
 
-/* ---------- Mobile App Glass Header ---------- */
-.mobile-header{
-  display:none;position:fixed;top:0;left:0;right:0;z-index:60;
-  background:var(--mobile-chrome-bg);color:var(--sidebar-text);
-  padding:calc(12px + env(safe-area-inset-top)) 20px 14px 20px;
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',sans-serif;
-  font-weight:600;letter-spacing:-0.01em;font-size:18px;
-  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  border-bottom:1px solid var(--mobile-chrome-border);
-  box-shadow:0 4px 24px rgba(0,0,0,0.14);
+/* ---------- Mobile App Glass Header (With Safe Area Insets) ---------- */
+.mobile-header {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  background: var(--mobile-chrome-bg); color: var(--sidebar-text);
+  padding: calc(12px + env(safe-area-inset-top)) 20px 14px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  font-weight: 600; letter-spacing: -0.01em; font-size: 18px;
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--mobile-chrome-border);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.14);
 }
-.mobile-header .brand-sub{
-  font-family:'Inter',sans-serif;font-size:10px;letter-spacing:.06em;
-  text-transform:uppercase;color:rgba(243,239,225,0.6);font-weight:500;margin-top:3px;
+.mobile-header .brand-sub {
+  font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: .06em;
+  text-transform: uppercase; color: rgba(243,239,225,0.6); font-weight: 500; margin-top: 3px;
 }
-.mobile-header-row{display:flex;justify-content:space-between;align-items:center;}
-.mobile-header-actions{display:flex;gap:10px;align-items:center;}
-.mobile-icon-btn{padding:6px 10px;font-size:15px;min-width:36px;}
-.mobile-tabbar{display:none;}
-.nav-icon{display:inline-flex;align-items:center;justify-content:center;transition:transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);}
-.nav-icon svg{width:17px;height:17px;display:block;}
+.mobile-header-row { display: flex; justify-content: space-between; align-items: center; }
+.mobile-header-actions { display: flex; gap: 10px; align-items: center; }
+.mobile-icon-btn {
+  padding: 0; font-size: 15px; width: 44px; height: 44px; /* HIG: 44px touch target */
+  display: flex; align-items: center; justify-content: center;
+}
+.mobile-tabbar { display: none; }
+.nav-icon { display: inline-flex; align-items: center; justify-content: center; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.nav-icon svg { width: 18px; height: 18px; display: block; }
 
-@media (max-width:760px){
-  .app{flex-direction:column;}
-  .sidebar{display:none;}
-  .mobile-header{display:block;}
-  .main{
-    padding:16px 16px calc(96px + env(safe-area-inset-bottom)) 16px;
-    padding-top:calc(88px + env(safe-area-inset-top));max-width:100%;margin-left:0 !important;
+@media (max-width: 760px) {
+  .app { flex-direction: column; }
+  .sidebar { display: none; }
+  .mobile-header { display: block; }
+  .main {
+    padding: 16px 16px calc(108px + env(safe-area-inset-bottom)) 16px;
+    padding-top: calc(88px + env(safe-area-inset-top)); max-width: 100%; margin-left: 0 !important;
   }
-  .page-header{align-items:flex-start;}
-  .kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;}
-  .kpi-card{padding:14px 14px 12px 14px;}
-  .kpi-value{font-size:19px;}
-  .chart-grid, .two-col{grid-template-columns:1fr;}
-  table{font-size:12px;}
-  th, td{padding:8px 6px;}
+  .page-header { align-items: flex-start; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-card { padding: 14px 14px 12px 14px; }
+  .kpi-value { font-size: 19px; }
+  .chart-grid, .two-col { grid-template-columns: 1fr; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 6px; }
   
-  /* Enforce exact uniform alignment across all Add Row elements on mobile */
-  .add-row{flex-direction:column;align-items:stretch;}
+  .add-row { flex-direction: column; align-items: stretch; }
   .add-row > * {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important; 
-    margin: 0 !important;
-    box-sizing: border-box !important;
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important; 
+    margin: 0 !important; box-sizing: border-box !important;
   }
-  .add-row .btn {
-    border-radius: var(--radius-sm) !important;
-    justify-content: center;
-  }
+  .add-row .btn { border-radius: var(--radius-sm) !important; justify-content: center; }
 
   /* iOS Dynamic Floating Glass Tabbar */
-  .mobile-tabbar{
-    display:flex;position:fixed;left:14px;right:14px;
-    bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;
-    background:var(--mobile-chrome-bg);color:var(--sidebar-text);
-    padding:6px;border-radius:999px;
-    backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-    border:1px solid var(--mobile-chrome-border);
-    box-shadow:0 16px 40px rgba(0,0,0,0.28);
-    overflow:hidden;
-    /* iOS Touch Defenses */
-    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
-    transition:transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s ease, background 0.3s ease;
-    will-change:transform;
+  .mobile-tabbar {
+    display: flex; position: fixed; left: 14px; right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 60;
+    background: var(--mobile-chrome-bg); color: var(--sidebar-text);
+    padding: 6px; border-radius: 999px;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--mobile-chrome-border);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+    overflow: hidden;
+    /* iOS Safari Touch Defenses */
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    transition: transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s ease, background 0.3s ease;
+    will-change: transform;
   }
   @media (prefers-color-scheme: light) {
-    :root:not(.theme-dark) .mobile-tabbar { box-shadow:0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
+    :root:not(.theme-dark) .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
   }
-  :root.theme-light .mobile-tabbar { box-shadow:0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
+  :root.theme-light .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
     
-  .tab-indicator{
-    position:absolute;top:6px;bottom:6px;left:6px;
-    width:calc((100% - 12px) / 7);
-    background:var(--gold);border-radius:999px;
-    box-shadow:0 4px 14px rgba(184,144,46,0.45);
-    transform:translateX(calc(100% * var(--idx, 0)));
-    transition:transform var(--tx-duration, 0.35s) cubic-bezier(0.25, 1, 0.5, 1);
-    pointer-events:none;z-index:1;will-change:transform;
+  .tab-indicator {
+    position: absolute; top: 6px; bottom: 6px; left: 6px;
+    width: calc((100% - 12px) / 7);
+    background: var(--gold); border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(184,144,46,0.45);
+    transform: translateX(calc(100% * var(--idx, 0)));
+    transition: transform var(--tx-duration, 0.35s) cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none; z-index: 1; will-change: transform;
   }
   @media (prefers-color-scheme: light) {
-    :root:not(.theme-dark) .tab-indicator { box-shadow:0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
+    :root:not(.theme-dark) .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
   }
-  :root.theme-light .tab-indicator { box-shadow:0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
+  :root.theme-light .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
 
-  .mobile-tabbar .nav-btn{
-    position:relative;z-index:2;flex:1 1 0%;flex-direction:column;gap:2px;padding:10px 2px;
-    border-radius:999px;font-size:9.5px;text-align:center;line-height:1.15;min-width:0;
-    /* FORCE NO GRAY PILL OUTLINES ON DRAG/TAP */
-    background:transparent !important; border-color:transparent !important; box-shadow:none !important;
+  .mobile-tabbar .nav-btn {
+    position: relative; z-index: 2; flex: 1 1 0%; flex-direction: column; gap: 2px;
+    padding: 8px 2px; border-radius: 999px; font-size: 9.5px; text-align: center;
+    line-height: 1.15; min-width: 0;
+    background: transparent !important; border-color: transparent !important; box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    transition:color .2s ease;
+    transition: color .2s ease;
     color: var(--sidebar-text);
+    min-height: 48px; /* HIG Touch target assurance */
   }
-  .mobile-tabbar .nav-btn:hover, 
-  .mobile-tabbar .nav-btn:active, 
-  .mobile-tabbar .nav-btn:focus {
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
+  .mobile-tabbar .nav-btn:hover, .mobile-tabbar .nav-btn:active, .mobile-tabbar .nav-btn:focus {
+    background: transparent !important; border-color: transparent !important; box-shadow: none !important;
   }
   
-  .mobile-tabbar .nav-btn span:not(.nav-icon){display:none;}
-  .mobile-tabbar .nav-btn .nav-icon svg{width:32px;height:32px;display:block;margin:0 auto;}
-  .mobile-tabbar .nav-btn.active{color:var(--nav-active-text);}
+  .mobile-tabbar .nav-btn span:not(.nav-icon) { display: none; }
+  .mobile-tabbar .nav-btn .nav-icon svg { width: 26px; height: 26px; display: block; margin: 0 auto; }
+  .mobile-tabbar .nav-btn.active { color: var(--nav-active-text); }
   
-  .mobile-tabbar.dragging{
-    z-index:65;
-    transition:none;
-    box-shadow:0 22px 50px rgba(0,0,0,0.36);
+  .mobile-tabbar.dragging {
+    z-index: 65; transition: none;
+    box-shadow: 0 22px 50px rgba(0,0,0,0.36);
   }
   @media (prefers-color-scheme: light) {
-    :root:not(.theme-dark) .mobile-tabbar.dragging { box-shadow:0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
+    :root:not(.theme-dark) .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
   }
-  :root.theme-light .mobile-tabbar.dragging { box-shadow:0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
-  
-  .mobile-tabbar.dragging .nav-btn.active .nav-icon{
-    transform:scale(1.15);
-  }
+  :root.theme-light .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
+  .mobile-tabbar.dragging .nav-btn.active .nav-icon { transform: scale(1.15); }
 }
 
 /* ---------- Save Controls & Toasts ---------- */
-.save-box{padding:0 22px;margin-top:10px;display:flex;flex-direction:column;gap:8px;}
-.btn.save-btn{background:var(--gold);color:var(--nav-active-text);border:1px solid var(--gold);width:100%;justify-content:center;}
-.btn.save-btn:hover{filter:brightness(1.05);}
-.btn.backup-btn{background:none;color:var(--sidebar-text);border:1px solid rgba(255,255,255,0.25);width:100%;justify-content:center;font-size:12px;padding:6px 10px;}
-.btn.backup-btn:hover{background:rgba(255,255,255,0.08);}
-.save-indicator{font-size:10.5px;color:rgba(243,239,225,0.6);text-align:center;min-height:13px;font-weight:500;}
+.save-box { padding: 0 22px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.btn.save-btn { background: var(--gold); color: var(--nav-active-text); border: 1px solid var(--gold); width: 100%; justify-content: center; }
+.btn.save-btn:hover { filter: brightness(1.05); }
+.btn.backup-btn { background: none; color: var(--sidebar-text); border: 1px solid rgba(255,255,255,0.25); width: 100%; justify-content: center; font-size: 12px; padding: 6px 10px; }
+.btn.backup-btn:hover { background: rgba(255,255,255,0.08); }
+.save-indicator { font-size: 10.5px; color: rgba(243,239,225,0.6); text-align: center; min-height: 13px; font-weight: 500; }
 
-.toast{
-  position:fixed;bottom:24px;left:50%;
-  transform:translateX(-50%) translateY(20px);
-  background:var(--toast-bg);color:var(--toast-text);
-  padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;
-  opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.16,1,.3,1);z-index:200;
-  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
-  border:1px solid var(--glass-border);box-shadow:0 12px 32px rgba(0,0,0,0.3);
+.toast {
+  position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--toast-bg); color: var(--toast-text);
+  padding: 12px 24px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.16,1,.3,1); z-index: 200;
+  backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--glass-border); box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast.error{background:rgba(168,68,47,0.92);}
-.toast.offline{background:rgba(184,144,46,0.92); color:#1D1E18;} /* Gold styling for offline alerts */
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: rgba(168,68,47,0.92); }
+.toast.offline { background: rgba(184,144,46,0.92); color: #1D1E18; }
 
 /* ---------- Sync & Connect Overlay ---------- */
-.connect-overlay{
-  display:none;position:fixed;inset:0;z-index:500;
-  background:var(--overlay-bg);
-  align-items:center;justify-content:center;padding:20px;
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+.connect-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: var(--overlay-bg);
+  align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-.connect-overlay.show{display:flex;}
-.connect-card{
-  background:var(--card);
-  backdrop-filter:blur(44px) saturate(190%);-webkit-backdrop-filter:blur(44px) saturate(190%);
-  border:1px solid var(--glass-border);border-radius:32px;
-  padding:32px 28px;max-width:390px;width:100%;
-  box-shadow:0 28px 70px rgba(0,0,0,0.25);text-align:center;
-  max-height:90vh;overflow-y:auto;position:relative;
+.connect-overlay.show { display: flex; }
+.connect-card {
+  background: var(--card);
+  backdrop-filter: blur(44px) saturate(190%); -webkit-backdrop-filter: blur(44px) saturate(190%);
+  border: 1px solid var(--glass-border); border-radius: 32px;
+  padding: 32px 28px; max-width: 390px; width: 100%;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.25); text-align: center;
+  max-height: 90vh; overflow-y: auto; position: relative;
 }
-.connect-close{
-  position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;
-  border:none;background:var(--paper);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
+.connect-close {
+  position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; /* HIG 44px */
+  border-radius: 50%; border: none; background: var(--paper); color: var(--muted);
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
-.connect-close:hover{background:var(--brick-soft);color:var(--brick);}
-.connect-sub{font-size:13px;color:var(--muted);margin:8px 0 18px 0;line-height:1.5;}
-.connect-section{margin-bottom:14px;}
-.connect-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:8px;}
-.connect-section input{width:100%;margin-bottom:8px;text-align:center;font-size:16px;padding:10px;}
-.connect-section .btn{width:100%;justify-content:center;}
-.connect-divider{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0;position:relative;}
-.connect-divider::before,.connect-divider::after{content:"";position:absolute;top:50%;width:35%;height:1px;background:var(--line);}
-.connect-divider::before{left:0;} .connect-divider::after{right:0;}
-.connect-error{color:var(--brick);font-size:12px;margin-top:6px;min-height:16px;}
-.sync-code-box{
-  font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:4px;
-  color:var(--ledger);background:var(--gold-soft);border:1px dashed var(--gold);border-radius:12px;
-  padding:14px 10px;margin:12px 0;
+.connect-close:hover { background: var(--brick-soft); color: var(--brick); }
+.connect-sub { font-size: 13px; color: var(--muted); margin: 8px 0 18px 0; line-height: 1.5; }
+.connect-section { margin-bottom: 14px; }
+.connect-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.connect-section input { width: 100%; margin-bottom: 8px; text-align: center; font-size: 16px; padding: 10px; }
+.connect-section .btn { width: 100%; justify-content: center; }
+.connect-divider { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 16px 0; position: relative; }
+.connect-divider::before, .connect-divider::after { content: ""; position: absolute; top: 50%; width: 35%; height: 1px; background: var(--line); }
+.connect-divider::before { left: 0; } .connect-divider::after { right: 0; }
+.connect-error { color: var(--brick); font-size: 12px; margin-top: 6px; min-height: 16px; }
+.sync-code-box {
+  font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; letter-spacing: 4px;
+  color: var(--ledger); background: var(--gold-soft); border: 1px dashed var(--gold); border-radius: 12px;
+  padding: 14px 10px; margin: 12px 0;
 }
 
 /* ---------- "More" Action Button & iOS Sheet ---------- */
-.more-btn{
-  display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 14px;border-radius:999px;
-  background:transparent;border:none;color:var(--sidebar-text);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-  cursor:pointer;transition:background .15s ease, transform .12s ease;
+.more-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  padding: 10px 14px; border-radius: 999px;
+  background: transparent; border: none; color: var(--sidebar-text);
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .15s ease, transform .12s ease;
+  min-height: 44px; /* HIG touch target */
 }
-.more-btn:hover{background:var(--nav-hover);}
-.more-btn:active{transform:scale(0.95);}
-.more-btn svg{width:16px;height:16px;flex-shrink:0;}
-.more-btn.mobile-icon-btn{
-  width:36px;height:36px;padding:0;flex-shrink:0;border-radius:50%;
-  background:rgba(255,255,255,0.12);
-  border:none;box-shadow:none;
+.more-btn:hover { background: var(--nav-hover); }
+.more-btn:active { transform: scale(0.95); }
+.more-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.more-btn.mobile-icon-btn {
+  width: 44px; height: 44px; padding: 0; flex-shrink: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: none; box-shadow: none;
 }
 
-.menu-backdrop{position:fixed;inset:0;z-index:240;background:transparent;display:none;}
-.menu-backdrop.show{display:block;}
+.menu-backdrop { position: fixed; inset: 0; z-index: 240; background: transparent; display: none; }
+.menu-backdrop.show { display: block; }
 
-.ios-menu{
-  position:fixed;z-index:250;width:252px;background:var(--menu-bg);
-  backdrop-filter:blur(44px) saturate(190%);-webkit-backdrop-filter:blur(44px) saturate(190%);
-  border-radius:22px;border:1px solid var(--glass-border);
-  box-shadow:0 24px 60px rgba(0,0,0,0.28),0 2px 10px rgba(0,0,0,0.08);
-  padding:6px;opacity:0;pointer-events:none;transform:scale(0.9);transform-origin:bottom left;
-  transition:opacity .18s ease, transform .18s cubic-bezier(.32,.72,0,1);
+.ios-menu {
+  position: fixed; z-index: 250; width: 252px; background: var(--menu-bg);
+  backdrop-filter: blur(44px) saturate(190%); -webkit-backdrop-filter: blur(44px) saturate(190%);
+  border-radius: 22px; border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28), 0 2px 10px rgba(0,0,0,0.08);
+  padding: 6px; opacity: 0; pointer-events: none; transform: scale(0.9); transform-origin: bottom left;
+  transition: opacity .18s ease, transform .18s cubic-bezier(.32,.72,0,1);
 }
-.ios-menu.show{opacity:1;pointer-events:auto;transform:scale(1);}
-.ios-sheet-handle{display:none;}
-.ios-menu-group{background:var(--menu-group-bg);border-radius:16px;overflow:hidden;margin-bottom:6px;}
-.ios-menu-group:last-of-type{margin-bottom:0;}
-.ios-menu-status{
-  display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:10.5px;
-  color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;
+.ios-menu.show { opacity: 1; pointer-events: auto; transform: scale(1); }
+.ios-sheet-handle { display: none; }
+.ios-menu-group { background: var(--menu-group-bg); border-radius: 16px; overflow: hidden; margin-bottom: 6px; }
+.ios-menu-group:last-of-type { margin-bottom: 0; }
+.ios-menu-status {
+  display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; font-size: 10.5px;
+  color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
 }
-.ios-menu-status .sync-code-display{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:none;font-size:12px;}
-.ios-menu-status .save-indicator{width:100%;text-align:center;text-transform:none;letter-spacing:normal;font-weight:500;min-height:0;}
+.ios-menu-status .sync-code-display { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-weight: 700; letter-spacing: 1px; text-transform: none; font-size: 12px; }
+.ios-menu-status .save-indicator { width: 100%; text-align: center; text-transform: none; letter-spacing: normal; font-weight: 500; min-height: 0; }
 
-/* Theme Selector Segmented Control */
 .theme-selector { 
   display: flex; background: rgba(128,128,128,0.12); border-radius: 12px; 
   padding: 3px; margin: 0 10px 10px 10px;
 }
 .theme-btn {
-  flex: 1; padding: 7px 0; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;
+  flex: 1; padding: 8px 0; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;
   border: none; background: transparent; color: var(--ink); border-radius: 9px; 
   cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 38px;
 }
 .theme-btn.active { background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 600; }
 
-.ios-menu-item{
-  display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:none;
-  border-bottom:1px solid rgba(128,128,128,0.15);font-family:'Inter',sans-serif;font-size:14.5px;font-weight:500;color:var(--ink);
-  text-align:left;cursor:pointer;transition:background .12s ease;
+.ios-menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; background: none; border: none;
+  border-bottom: 1px solid rgba(128,128,128,0.15); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--ink);
+  text-align: left; cursor: pointer; transition: background .12s ease;
+  min-height: 48px; /* HIG 44px+ touch target */
 }
-.ios-menu-item:last-child{border-bottom:none;}
-.ios-menu-item:active{background:var(--nav-hover);}
-.ios-menu-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--ledger);flex-shrink:0;}
-.ios-menu-icon svg{width:18px;height:18px;display:block;}
-.ios-menu-cancel{display:none;}
+.ios-menu-item:last-child { border-bottom: none; }
+.ios-menu-item:active { background: var(--nav-hover); }
+.ios-menu-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--ledger); flex-shrink: 0; }
+.ios-menu-icon svg { width: 20px; height: 20px; display: block; }
+.ios-menu-cancel { display: none; }
 
-@media (max-width:760px){
-  .menu-backdrop.show{background:rgba(20,30,22,0.36);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
-  .ios-menu{
-    left:12px !important;right:12px !important;bottom:calc(12px + env(safe-area-inset-bottom)) !important;top:auto !important;
-    width:auto;border-radius:28px;padding:8px;transform-origin:bottom center;transform:translateY(24px);
+@media (max-width: 760px) {
+  .menu-backdrop.show { background: rgba(20,30,22,0.36); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .ios-menu {
+    left: 12px !important; right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important; top: auto !important;
+    width: auto; border-radius: 28px; padding: 8px; transform-origin: bottom center; transform: translateY(24px);
   }
-  .ios-menu.show{transform:translateY(0);}
-  .ios-sheet-handle{display:block;width:36px;height:5px;border-radius:3px;background:rgba(128,128,128,0.3);margin:5px auto 8px auto;}
-  .ios-menu-item{padding:14px 16px;font-size:16px;}
-  .theme-btn { font-size: 14.5px; padding: 9px 0; }
-  .ios-menu-cancel{
-    display:block;width:100%;margin-top:6px;padding:14px;background:var(--menu-cancel-bg);
-    border:none;border-radius:20px;font-family:'Inter',sans-serif;font-weight:600;font-size:16px;color:var(--brick);
-    text-align:center;cursor:pointer;
+  .ios-menu.show { transform: translateY(0); }
+  .ios-sheet-handle { display: block; width: 36px; height: 5px; border-radius: 3px; background: rgba(128,128,128,0.3); margin: 5px auto 8px auto; }
+  .ios-menu-item { padding: 16px; font-size: 16px; }
+  .theme-btn { font-size: 14.5px; padding: 10px 0; }
+  .ios-menu-cancel {
+    display: block; width: 100%; margin-top: 6px; padding: 16px; background: var(--menu-cancel-bg);
+    border: none; border-radius: 20px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 16px; color: var(--brick);
+    text-align: center; cursor: pointer; min-height: 52px;
   }
-  .ios-menu-cancel:active{filter:brightness(0.9);}
+  .ios-menu-cancel:active { filter: brightness(0.9); }
 }
 
 /* ---------- iOS Style Modal Alert ---------- */
@@ -777,15 +791,14 @@ td input:focus, td select:focus{border-color:var(--gold);background:var(--card);
 .ios-alert-msg { font-size: 13px; color: var(--ink); line-height: 1.3; font-weight: 400; }
 .ios-alert-actions { display: flex; }
 .ios-alert-btn {
-  flex: 1; padding: 12px; border: none; background: transparent;
+  flex: 1; padding: 14px; border: none; background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   font-size: 17px; cursor: pointer; transition: background 0.15s ease;
+  min-height: 48px; /* HIG 44px+ touch target */
 }
 .ios-alert-btn:active { background: rgba(128,128,128,0.15); }
 .ios-alert-btn.cancel { color: #007AFF; font-weight: 400; border-right: 1px solid rgba(128,128,128,0.2); }
-@media (prefers-color-scheme: dark) { 
-  :root:not(.theme-light) .ios-alert-btn.cancel { color: #0A84FF; } 
-}
+@media (prefers-color-scheme: dark) { :root:not(.theme-light) .ios-alert-btn.cancel { color: #0A84FF; } }
 :root.theme-dark .ios-alert-btn.cancel { color: #0A84FF; }
 .ios-alert-btn.confirm { color: var(--brick); font-weight: 600; }
 </style>
@@ -812,6 +825,27 @@ function applyTheme() {
   }
 }
 applyTheme();
+
+/* ============================= UNIVERSAL HAPTIC BRIDGE ============================= */
+// Automatically triggers tactile physical feedback on Apple hardware (or web fallbacks)
+function triggerHaptic(style = 'light') {
+  try {
+    // 1. Check for native iOS Capacitor Bridge
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+      const Haptics = window.Capacitor.Plugins.Haptics;
+      if (style === 'light') Haptics.impact({ style: 'LIGHT' });
+      else if (style === 'medium') Haptics.impact({ style: 'MEDIUM' });
+      else if (style === 'heavy') Haptics.impact({ style: 'HEAVY' });
+      return;
+    }
+    // 2. Fallback to standard web vibration API
+    if (navigator.vibrate) {
+      if (style === 'light') navigator.vibrate(4);
+      else if (style === 'medium') navigator.vibrate(8);
+      else if (style === 'heavy') navigator.vibrate([10, 20, 10]);
+    }
+  } catch(e) { /* Silently fail on non-supported hardware */ }
+}
 </script>
 <!-- Firebase (for cross-device sync) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -825,7 +859,6 @@ applyTheme();
         <div class="brand-title">
           <span class="full-text">Ledger &amp; Goal</span>
           <span class="logo-only" title="Ledger & Goal">
-            <!-- App Logo SVG -->
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" stroke="var(--gold)"></circle>
               <path d="M9 7v10" stroke="currentColor"></path>
@@ -837,14 +870,14 @@ applyTheme();
         </div>
         <div class="brand-sub full-text">Personal Finance Tracker</div>
       </div>
-      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu" title="Toggle Sidebar">
+      <button class="hamburger" onclick="toggleSidebar(); triggerHaptic('light');" aria-label="Toggle menu" title="Toggle Sidebar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
     </div>
     <div class="nav" id="nav"></div>
     <div class="sidebar-footer">
       <div class="save-indicator" style="margin-bottom:9px;">— unsaved —</div>
-      <button class="more-btn" onclick="toggleActionsMenu(event)" aria-haspopup="true" aria-label="More actions" title="More">
+      <button class="more-btn" onclick="toggleActionsMenu(event); triggerHaptic('light');" aria-haspopup="true" aria-label="More actions" title="More">
         <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="16" cy="10" r="1.7"/></svg>
         <span class="nav-text" style="margin-left:6px;">More</span>
       </button>
@@ -857,7 +890,7 @@ applyTheme();
         <div class="brand-sub">Personal Finance Tracker</div>
       </div>
       <div class="mobile-header-actions">
-        <button class="more-btn mobile-icon-btn" onclick="toggleActionsMenu(event)" title="More" aria-label="More actions">
+        <button class="more-btn mobile-icon-btn" onclick="toggleActionsMenu(event); triggerHaptic('light');" title="More" aria-label="More actions">
           <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="16" cy="10" r="1.7"/></svg>
         </button>
       </div>
@@ -867,7 +900,7 @@ applyTheme();
   <div class="mobile-tabbar" id="mobile-nav"></div>
   <div class="toast" id="toast"></div>
   <div class="connect-overlay" id="connect-overlay"><div class="connect-card" id="connect-card"></div></div>
-  <div class="menu-backdrop" id="menu-backdrop" onclick="closeActionsMenu()"></div>
+  <div class="menu-backdrop" id="menu-backdrop" onclick="closeActionsMenu(); triggerHaptic('light');"></div>
   <div class="ios-menu" id="actions-menu">
     <div class="ios-sheet-handle"></div>
     <div class="ios-menu-group">
@@ -875,9 +908,9 @@ applyTheme();
         <span>Theme</span>
       </div>
       <div class="theme-selector">
-        <button class="theme-btn" data-theme="light" onclick="setThemePreference('light')">☀️ Light</button>
-        <button class="theme-btn" data-theme="dark" onclick="setThemePreference('dark')">🌙 Dark</button>
-        <button class="theme-btn" data-theme="system" onclick="setThemePreference('system')">⚙️ System</button>
+        <button class="theme-btn" data-theme="light" onclick="setThemePreference('light'); triggerHaptic('light');">☀️ Light</button>
+        <button class="theme-btn" data-theme="dark" onclick="setThemePreference('dark'); triggerHaptic('light');">🌙 Dark</button>
+        <button class="theme-btn" data-theme="system" onclick="setThemePreference('system'); triggerHaptic('light');">⚙️ System</button>
       </div>
     </div>
     <div class="ios-menu-group">
@@ -886,19 +919,19 @@ applyTheme();
       </div>
     </div>
     <div class="ios-menu-group">
-      <button class="ios-menu-item" onclick="manualSave(); closeActionsMenu();">
+      <button class="ios-menu-item" onclick="manualSave(); closeActionsMenu(); triggerHaptic('medium');">
         <span class="ios-menu-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3h10l3 3v11h-13z"/><path d="M6 3v5h6V3"/><rect x="6.5" y="11.5" width="7" height="4.5"/></svg></span>
         Save Now
       </button>
-      <button class="ios-menu-item" onclick="openSyncPanel(); closeActionsMenu();">
+      <button class="ios-menu-item" onclick="openSyncPanel(); closeActionsMenu(); triggerHaptic('light');">
         <span class="ios-menu-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a6 6 0 0 1 10.5-3.5L16 6"/><path d="M16 3v3.5h-3.5"/><path d="M16 12a6 6 0 0 1-10.5 3.5L4 14"/><path d="M4 17v-3.5h3.5"/></svg></span>
         Manage Sync
       </button>
-      <button class="ios-menu-item" onclick="backupData(); closeActionsMenu();">
+      <button class="ios-menu-item" onclick="backupData(); closeActionsMenu(); triggerHaptic('light');">
         <span class="ios-menu-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9"/><path d="M6.5 8.5 10 12l3.5-3.5"/><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"/></svg></span>
         Download Backup
       </button>
-      <label class="ios-menu-item" style="cursor:pointer;">
+      <label class="ios-menu-item" style="cursor:pointer;" onclick="triggerHaptic('light');">
         <span class="ios-menu-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4"/><path d="M6.5 7.5 10 4l3.5 3.5"/><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"/></svg></span>
         Restore from Backup
         <input type="file" accept="application/json" style="display:none" onchange="restoreData(this); closeActionsMenu();">
@@ -907,7 +940,7 @@ applyTheme();
     <div class="ios-menu-group">
       <div class="ios-menu-status"><span class="save-indicator" style="text-transform:none;">— unsaved —</span></div>
     </div>
-    <button class="ios-menu-cancel" onclick="closeActionsMenu()">Cancel</button>
+    <button class="ios-menu-cancel" onclick="closeActionsMenu(); triggerHaptic('light');">Cancel</button>
   </div>
   
   <!-- Custom iOS Alert -->
@@ -918,8 +951,8 @@ applyTheme();
         <div class="ios-alert-msg" id="ios-alert-msg">Are you sure?</div>
       </div>
       <div class="ios-alert-actions">
-        <button class="ios-alert-btn cancel" onclick="closeConfirmAlert()">Cancel</button>
-        <button class="ios-alert-btn confirm" onclick="executeConfirm()">Delete</button>
+        <button class="ios-alert-btn cancel" onclick="closeConfirmAlert(); triggerHaptic('light');">Cancel</button>
+        <button class="ios-alert-btn confirm" onclick="executeConfirm(); triggerHaptic('medium');">Delete</button>
       </div>
     </div>
   </div>
@@ -1048,33 +1081,37 @@ async function startNewTracker(){
     localStorage.setItem(SYNC_CODE_KEY, code);
     state = fresh;
     connectToCode(code);
+    triggerHaptic('medium');
   }catch(e){
     console.error(e);
     showConnectError("Couldn't create a tracker — check your Firestore setup/rules.");
+    triggerHaptic('heavy');
   }
 }
 
 async function connectExisting(){
   const input = document.getElementById("connect-code-input");
   const code = (input.value || "").trim().toUpperCase();
-  if (!code){ showConnectError("Enter a sync code first."); return; }
+  if (!code){ showConnectError("Enter a sync code first."); triggerHaptic('heavy'); return; }
   if (!firebaseReady){ showConnectError(); return; }
   try{
     const snap = await docRef(code).get();
-    if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); return; }
+    if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); triggerHaptic('heavy'); return; }
     localStorage.setItem(SYNC_CODE_KEY, code);
     state = Object.assign(defaultState(), snap.data());
     connectToCode(code);
+    triggerHaptic('medium');
   }catch(e){
     console.error(e);
     showConnectError("Couldn't reach the sync server. Check your connection and try again.");
+    triggerHaptic('heavy');
   }
 }
 
 function showConnectError(msg){
   const el = document.getElementById("connect-error");
   if (!el) return;
-  el.textContent = msg || "Sync isn't set up yet — open this file and follow the Firebase setup notes near the top of the <script> tag.";
+  el.textContent = msg || "Sync isn't set up yet — check Firebase configuration.";
 }
 
 function connectToCode(code){
@@ -1094,7 +1131,7 @@ function subscribeToDoc(){
     if (!snap.exists) return;
     const data = snap.data();
     const json = JSON.stringify(data);
-    if (json === lastPushedJSON) return; // ignore the echo of our own write
+    if (json === lastPushedJSON) return;
     state = Object.assign(defaultState(), data);
     render();
     saveStatus = navigator.onLine ? "saved" : "offline";
@@ -1146,6 +1183,7 @@ document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeActionsMe
 let alertCallback = null;
 
 function showConfirmAlert(title, msg, callback) {
+  triggerHaptic('medium');
   document.getElementById('ios-alert-title').textContent = title;
   document.getElementById('ios-alert-msg').textContent = msg;
   alertCallback = callback;
@@ -1173,11 +1211,12 @@ function disconnectSync(){
   renderConnectOverlay();
   document.getElementById("connect-overlay").classList.add("show");
   updateSyncCodeDisplay();
+  triggerHaptic('medium');
 }
 
 function copySyncCode(){
   if (!syncCode) return;
-  navigator.clipboard.writeText(syncCode).then(()=> showToast_(false, "Sync code copied")).catch(()=>{});
+  navigator.clipboard.writeText(syncCode).then(()=> { showToast_(false, "Sync code copied"); triggerHaptic('light'); }).catch(()=>{});
 }
 
 function openSyncPanel(){
@@ -1192,10 +1231,10 @@ function renderConnectOverlay(){
   const card = document.getElementById("connect-card");
   if (!card) return;
   const setupWarning = !firebaseConfigured()
-    ? `<div class="connect-error" style="margin-bottom:10px;">⚠ Sync isn't configured yet. Open this file and fill in FIREBASE_CONFIG near the top of the &lt;script&gt; tag — setup steps are in the comment right above it.</div>` : "";
+    ? `<div class="connect-error" style="margin-bottom:10px;">⚠ Sync isn't configured yet. Check Firebase settings.</div>` : "";
   if (!syncCode){
     card.innerHTML = `
-      <button class="connect-close" onclick="closeSyncPanel()" title="Close" aria-label="Close">✕</button>
+      <button class="connect-close" onclick="closeSyncPanel(); triggerHaptic('light');" title="Close" aria-label="Close">✕</button>
       <div class="brand-title" style="color:var(--ledger);font-size:20px;">Ledger &amp; Goal</div>
       <div class="connect-sub">Connect this device to sync your data across your phone, laptop, and anywhere else you open this link.</div>
       ${setupWarning}
@@ -1212,7 +1251,7 @@ function renderConnectOverlay(){
     `;
   } else {
     card.innerHTML = `
-      <button class="connect-close" onclick="closeSyncPanel()" title="Close" aria-label="Close">✕</button>
+      <button class="connect-close" onclick="closeSyncPanel(); triggerHaptic('light');" title="Close" aria-label="Close">✕</button>
       <div class="brand-title" style="color:var(--ledger);font-size:20px;">Synced ✓</div>
       <div class="connect-sub">This device is connected. Enter this same code on any other device to see the same data everywhere.</div>
       <div class="sync-code-box">${syncCode}</div>
@@ -1223,13 +1262,12 @@ function renderConnectOverlay(){
         <button class="btn secondary" onclick="connectExisting()">Switch</button>
       </div>
       <div class="connect-error" id="connect-error"></div>
-      <button class="btn danger" style="width:100%;justify-content:center;padding:8px;" onclick="disconnectSync()">Disconnect this device</button>
+      <button class="btn danger" style="width:100%;justify-content:center;padding:10px;" onclick="disconnectSync()">Disconnect this device</button>
     `;
   }
 }
 
 function loadState(){
-  // Restore Sidebar Layout state (Default is collapsed if explicitly not false)
   const sidebarState = localStorage.getItem('sidebar_collapsed');
   if (sidebarState === 'false') {
     document.getElementById('sidebar').classList.remove('collapsed');
@@ -1256,10 +1294,8 @@ function saveState(){
 }
 
 function commitSave(showToast){
-  // 1. Always ensure local persistent copy saves first
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ /* best-effort local cache */ }
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ }
   
-  // 2. Check strict network connectivity for sync
   if (!navigator.onLine) {
     saveStatus = "offline";
     updateSaveIndicator();
@@ -1267,7 +1303,6 @@ function commitSave(showToast){
     return;
   }
 
-  // 3. Prevent save to cloud if not connected/synced
   if (!syncCode || !db){
     saveStatus = "error";
     updateSaveIndicator();
@@ -1337,6 +1372,7 @@ function restoreData(fileInput){
       state = Object.assign(defaultState(), parsed);
       commitSave(true);
       render();
+      triggerHaptic('medium');
     }catch(err){
       alert("That file doesn't look like a valid backup.");
     }
@@ -1395,7 +1431,6 @@ function netWorthTotal(entry){
   const liabilities = (+entry.creditCards||0)+(+entry.loans||0)+(+entry.mortgage||0)+(+entry.otherLiabilities||0);
   return {assets, liabilities, net: assets-liabilities};
 }
-// Array mapping using slightly more visible values optimized for both themes
 const palette = [
   "var(--ledger)", "var(--gold)", "var(--brick)", "var(--ledger-light)", 
   "#8A7A4E", "#A06B52", "#5A8B74", "#D2B16A", "#C45B46", "#68957A", "#B69F6B", "#8C6A4F", "#4F8268", "#CBA066"
@@ -1464,7 +1499,12 @@ function updateTabIndicator(bar, targetId, animate = true){
   });
 }
 
-function switchTab(id){ state.activeTab = id; window.scrollTo(0,0); render(); }
+function switchTab(id){ 
+  if (state.activeTab !== id) triggerHaptic('light');
+  state.activeTab = id; 
+  window.scrollTo(0,0); 
+  render(); 
+}
 
 /* ---------- Smooth Dragging + iOS Elastic Edge Bounce ---------- */
 function setupTabbarDrag(bar){
@@ -1475,13 +1515,12 @@ function setupTabbarDrag(bar){
 
   const getButtons = () => Array.from(bar.querySelectorAll(".nav-btn"));
 
-  // iOS Safari Lock Defense: Absolutely force WebKit to yield touch priority immediately without waiting for scroll momentum to halt
   bar.addEventListener("touchstart", (e) => {
     e.stopPropagation();
   }, { passive: false });
 
   bar.addEventListener("touchmove", (e) => {
-    e.preventDefault(); // Forces iOS to surrender 100% of gesture control to our slider instead of page scrolling
+    e.preventDefault(); 
     e.stopPropagation();
   }, { passive: false });
 
@@ -1524,7 +1563,7 @@ function setupTabbarDrag(bar){
     const activeBtn = btns[activeIdx];
     
     if (activeBtn && activeBtn.dataset.tab && activeBtn.dataset.tab !== candidateId) {
-      if (navigator.vibrate) navigator.vibrate(4);
+      triggerHaptic('light');
       candidateId = activeBtn.dataset.tab;
       btns.forEach(b => b.classList.toggle("active", b === activeBtn));
     }
@@ -1637,11 +1676,11 @@ function renderDashboard(){
     </div>
     <div class="controls">
       <label style="font-size:12px;color:var(--muted);">Month</label>
-      <select onchange="state.dashboardMonth=+this.value; saveState(); render();">
+      <select onchange="state.dashboardMonth=+this.value; saveState(); render(); triggerHaptic('light');">
         ${monthNames.map((m,i)=>`<option value="${i+1}" ${month===i+1?'selected':''}>${m}</option>`).join("")}
       </select>
       <label style="font-size:12px;color:var(--muted);">Year</label>
-      <input type="number" value="${year}" style="width:80px" onchange="state.dashboardYear=+this.value; saveState(); render();">
+      <input type="number" value="${year}" style="width:80px" onchange="state.dashboardYear=+this.value; saveState(); render(); triggerHaptic('light');">
     </div>
   </div>
 
@@ -1702,7 +1741,7 @@ function renderTransactions(){
   <div class="section">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
       <div class="section-title" style="margin-bottom:0;">Log</div>
-      <button class="btn secondary" onclick="toggleAddTx()">+ Add</button>
+      <button class="btn secondary" onclick="toggleAddTx(); triggerHaptic('light');">+ Add</button>
     </div>
     
     <div class="add-row" id="add-tx-form">
@@ -1715,7 +1754,7 @@ function renderTransactions(){
       <select id="tx-cat" class="cat">${catOptions}</select>
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
       <input type="text" id="tx-acct" class="short" placeholder="Account">
-      <button class="btn" onclick="addTransaction()">Save</button>
+      <button class="btn" onclick="addTransaction(); triggerHaptic('medium');">Save</button>
     </div>
     
     <div style="overflow-x:auto;">
@@ -1773,7 +1812,7 @@ function renderBudget(){
     <tr>
       <td class="text">${c}</td>
       <td class="text">${type}</td>
-      <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value)"></td>
+      <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value); triggerHaptic('light');"></td>
       <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
       <td class="${diff<0 ? 'amt-neg' : 'amt-pos'}">${fmt(diff)}</td>
       <td>
@@ -1795,11 +1834,11 @@ function renderBudget(){
     </div>
     <div class="controls">
       <label style="font-size:12px;color:var(--muted);">Month</label>
-      <select onchange="state.budgetMonth=+this.value; saveState(); render();">
+      <select onchange="state.budgetMonth=+this.value; saveState(); render(); triggerHaptic('light');">
         ${monthNames.map((m,i)=>`<option value="${i+1}" ${month===i+1?'selected':''}>${m}</option>`).join("")}
       </select>
       <label style="font-size:12px;color:var(--muted);">Year</label>
-      <input type="number" value="${year}" style="width:80px" onchange="state.budgetYear=+this.value; saveState(); render();">
+      <input type="number" value="${year}" style="width:80px" onchange="state.budgetYear=+this.value; saveState(); render(); triggerHaptic('light');">
     </div>
   </div>
   <div class="section">
@@ -1842,11 +1881,11 @@ function renderSavings(){
     }
     return `
     <tr>
-      <td class="text"><input type="text" value="${g.name}" onchange="updateSaving('${g.id}','name',this.value)"></td>
-      <td><input type="number" value="${g.goal}" onchange="updateSaving('${g.id}','goal',this.value)"></td>
-      <td><input type="number" value="${g.starting}" onchange="updateSaving('${g.id}','starting',this.value)"></td>
-      <td><input type="number" value="${g.monthly}" onchange="updateSaving('${g.id}','monthly',this.value)"></td>
-      <td><input type="number" value="${g.saved}" onchange="updateSaving('${g.id}','saved',this.value)"></td>
+      <td class="text"><input type="text" value="${g.name}" onchange="updateSaving('${g.id}','name',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${g.goal}" onchange="updateSaving('${g.id}','goal',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${g.starting}" onchange="updateSaving('${g.id}','starting',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${g.monthly}" onchange="updateSaving('${g.id}','monthly',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${g.saved}" onchange="updateSaving('${g.id}','saved',this.value); triggerHaptic('light');"></td>
       <td>${fmt(left)}</td>
       <td>
         <div class="progress-wrap">
@@ -1880,7 +1919,7 @@ function renderSavings(){
     </table>
     </div>
     <div class="add-row">
-      <button class="btn" onclick="addSaving()">+ Add Goal</button>
+      <button class="btn" onclick="addSaving(); triggerHaptic('medium');">+ Add Goal</button>
     </div>
   </div>
   `;
@@ -1914,13 +1953,13 @@ function renderDebt(){
     const totalPay = (+d.minPayment||0)+(+d.extraPayment||0);
     return `
     <tr>
-      <td class="text"><input type="text" value="${d.name}" onchange="updateDebt('${d.id}','name',this.value)"></td>
-      <td class="text"><input type="text" value="${d.type}" onchange="updateDebt('${d.id}','type',this.value)"></td>
-      <td><input type="number" value="${d.original}" onchange="updateDebt('${d.id}','original',this.value)"></td>
-      <td><input type="number" value="${d.current}" onchange="updateDebt('${d.id}','current',this.value)"></td>
-      <td><input type="number" value="${d.rate}" onchange="updateDebt('${d.id}','rate',this.value)">%</td>
-      <td><input type="number" value="${d.minPayment}" onchange="updateDebt('${d.id}','minPayment',this.value)"></td>
-      <td><input type="number" value="${d.extraPayment}" onchange="updateDebt('${d.id}','extraPayment',this.value)"></td>
+      <td class="text"><input type="text" value="${d.name}" onchange="updateDebt('${d.id}','name',this.value); triggerHaptic('light');"></td>
+      <td class="text"><input type="text" value="${d.type}" onchange="updateDebt('${d.id}','type',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${d.original}" onchange="updateDebt('${d.id}','original',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${d.current}" onchange="updateDebt('${d.id}','current',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${d.rate}" onchange="updateDebt('${d.id}','rate',this.value); triggerHaptic('light');">%</td>
+      <td><input type="number" value="${d.minPayment}" onchange="updateDebt('${d.id}','minPayment',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${d.extraPayment}" onchange="updateDebt('${d.id}','extraPayment',this.value); triggerHaptic('light');"></td>
       <td>${fmt(totalPay)}</td>
       <td>
         <div class="progress-wrap">
@@ -1952,7 +1991,7 @@ function renderDebt(){
     </table>
     </div>
     <div class="add-row">
-      <button class="btn" onclick="addDebt()">+ Add Debt</button>
+      <button class="btn" onclick="addDebt(); triggerHaptic('medium');">+ Add Debt</button>
     </div>
   </div>
   `;
@@ -1979,16 +2018,16 @@ function renderNetWorth(){
     const {assets, liabilities, net} = netWorthTotal(e);
     return `
     <tr>
-      <td class="text"><input type="text" value="${e.month}" onchange="updateNW('${e.id}','month',this.value)"></td>
-      <td><input type="number" value="${e.cash}" onchange="updateNW('${e.id}','cash',this.value)"></td>
-      <td><input type="number" value="${e.investments}" onchange="updateNW('${e.id}','investments',this.value)"></td>
-      <td><input type="number" value="${e.property}" onchange="updateNW('${e.id}','property',this.value)"></td>
-      <td><input type="number" value="${e.otherAssets}" onchange="updateNW('${e.id}','otherAssets',this.value)"></td>
+      <td class="text"><input type="text" value="${e.month}" onchange="updateNW('${e.id}','month',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.cash}" onchange="updateNW('${e.id}','cash',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.investments}" onchange="updateNW('${e.id}','investments',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.property}" onchange="updateNW('${e.id}','property',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.otherAssets}" onchange="updateNW('${e.id}','otherAssets',this.value); triggerHaptic('light');"></td>
       <td class="amt-pos">${fmt(assets)}</td>
-      <td><input type="number" value="${e.creditCards}" onchange="updateNW('${e.id}','creditCards',this.value)"></td>
-      <td><input type="number" value="${e.loans}" onchange="updateNW('${e.id}','loans',this.value)"></td>
-      <td><input type="number" value="${e.mortgage}" onchange="updateNW('${e.id}','mortgage',this.value)"></td>
-      <td><input type="number" value="${e.otherLiabilities}" onchange="updateNW('${e.id}','otherLiabilities',this.value)"></td>
+      <td><input type="number" value="${e.creditCards}" onchange="updateNW('${e.id}','creditCards',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.loans}" onchange="updateNW('${e.id}','loans',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.mortgage}" onchange="updateNW('${e.id}','mortgage',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${e.otherLiabilities}" onchange="updateNW('${e.id}','otherLiabilities',this.value); triggerHaptic('light');"></td>
       <td class="amt-neg">${fmt(liabilities)}</td>
       <td class="${net<0?'amt-neg':'amt-pos'}">${fmt(net)}</td>
       <td><button class="btn danger" onclick="deleteNW('${e.id}')">✕</button></td>
@@ -2031,7 +2070,7 @@ function renderNetWorth(){
       <tbody>${rows || '<tr><td colspan="13" class="empty-msg">No entries yet.</td></tr>'}</tbody>
     </table>
     </div>
-    <div class="add-row"><button class="btn" onclick="addNW()">+ Add Month</button></div>
+    <div class="add-row"><button class="btn" onclick="addNW(); triggerHaptic('medium');">+ Add Month</button></div>
   </div>
   `;
 }
@@ -2064,7 +2103,7 @@ function renderCategories(){
     <div class="page-desc">Edit these lists to customize every dropdown across the tracker.</div></div>
     <div class="controls">
       <label style="font-size:12px;color:var(--muted);">Currency symbol</label>
-      <input type="text" value="${state.currency}" style="width:50px" onchange="state.currency=this.value||'$'; saveState(); render();">
+      <input type="text" value="${state.currency}" style="width:50px" onchange="state.currency=this.value||'$'; saveState(); render(); triggerHaptic('light');">
     </div>
   </div>
   <div class="two-col">
@@ -2073,7 +2112,7 @@ function renderCategories(){
       <div class="tag-list">${incomeTags || '<span class="empty-msg">None yet.</span>'}</div>
       <div class="add-row">
         <input type="text" id="new-income-cat" class="desc" placeholder="New income category">
-        <button class="btn secondary" onclick="addCategory('income')">+ Add</button>
+        <button class="btn secondary" onclick="addCategory('income'); triggerHaptic('medium');">+ Add</button>
       </div>
     </div>
     <div class="section">
@@ -2081,7 +2120,7 @@ function renderCategories(){
       <div class="tag-list">${expenseTags || '<span class="empty-msg">None yet.</span>'}</div>
       <div class="add-row">
         <input type="text" id="new-expense-cat" class="desc" placeholder="New expense category">
-        <button class="btn secondary" onclick="addCategory('expense')">+ Add</button>
+        <button class="btn secondary" onclick="addCategory('expense'); triggerHaptic('medium');">+ Add</button>
       </div>
     </div>
   </div>
@@ -2102,14 +2141,13 @@ function removeCategory(kind, name){
   });
 }
 
-/* ============================= INIT ============================= */
+/* ============================= INIT & CAPACITOR BRIDGE BOOTSTRAP ============================= */
 window.addEventListener("beforeunload", () => { clearTimeout(saveTimer); commitSave(false); });
 window.addEventListener("resize", () => {
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
 });
 
-// Auto-collapse sidebar on scroll or clicking outside (desktop/tablet only)
 window.addEventListener("scroll", () => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
@@ -2121,13 +2159,21 @@ window.addEventListener("scroll", () => {
 document.addEventListener("click", (e) => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
-    // If click is outside the sidebar entirely
     if (!sidebar.contains(e.target)) {
       sidebar.classList.add('collapsed');
       localStorage.setItem('sidebar_collapsed', true);
     }
   }
 });
+
+// Automatically detect native iOS Xcode wrappers and optimize hardware chrome
+if (window.Capacitor && window.Capacitor.Plugins) {
+  try {
+    const { StatusBar, SplashScreen } = window.Capacitor.Plugins;
+    if (StatusBar) StatusBar.setStyle({ style: 'DARK' });
+    if (SplashScreen) SplashScreen.hide();
+  } catch(e) {}
+}
 
 loadState();
 </script>
