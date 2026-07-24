@@ -2624,6 +2624,8 @@ window.addEventListener("scroll", (e) => {
   if (window.innerWidth <= 760) {
     const currentScrollY = window.scrollY || 0;
     const diff = currentScrollY - lastScrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const isAtBottom = currentScrollY >= (maxScroll - 15);
     
     if (Math.abs(diff) > 2) {
       if (diff > 0 && currentScrollY > 60) {
@@ -2636,7 +2638,7 @@ window.addEventListener("scroll", (e) => {
             triggerHaptic('light');
           }
         }
-      } else if (diff < 0) {
+      } else if (diff < -6 && !isAtBottom) {
         scrollDelta = 0;
         if (isTabMinimized) {
           isTabMinimized = false;
