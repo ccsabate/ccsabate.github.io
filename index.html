@@ -685,9 +685,10 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   .add-row .btn { border-radius: var(--radius-sm) !important; justify-content: center; }
 
-  /* iOS 26 Dynamic Floating Glass Tabbar */
+  /* iOS 26 Dynamic Floating Liquid Glass Tab Bar */
   .mobile-tabbar {
-    display: flex; position: fixed; left: 14px; right: 14px;
+    display: flex; position: fixed;
+    left: 14px; width: calc(100% - 28px); height: 60px;
     bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 60;
     background: var(--mobile-chrome-bg); color: var(--sidebar-text);
     padding: 6px; border-radius: 999px;
@@ -696,77 +697,115 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     box-shadow: 0 16px 40px rgba(0,0,0,0.28);
     overflow: hidden;
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-    transition: box-shadow 0.3s ease, background 0.3s ease;
+    transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                left 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s ease, background 0.3s ease;
   }
   @media (prefers-color-scheme: light) {
     :root:not(.theme-dark) .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
   }
   :root.theme-light .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
+  
+  /* iOS 26 Minimize to Bottom-Left Corner & Compact 50x50 Pill Size */
+  .mobile-tabbar.minimized {
+    left: 16px !important;
+    right: auto !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transform: translateY(0);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    cursor: pointer;
+  }
+  .mobile-tabbar.minimized .nav-btn:not(.active) {
+    opacity: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    flex: 0 0 0% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    pointer-events: none;
+    overflow: hidden !important;
+  }
+  .mobile-tabbar.minimized .nav-btn.active {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--gold) !important;
+  }
+  .mobile-tabbar.minimized .nav-btn.active .nav-icon {
+    margin: 0 auto !important;
+    transform: scale(1.15) !important;
+  }
+  .mobile-tabbar.minimized .tab-indicator {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
     
-  /* iOS 26 Native Liquid Glass Selection Capsule */
+  /* iOS 26 Asymmetric Liquid Morph Selection Pill */
   .tab-indicator {
     position: absolute; top: 6px; bottom: 6px; left: 6px;
     width: calc((100% - 12px) / 7);
     background: var(--gold); border-radius: 999px;
     box-shadow: 0 4px 14px rgba(184,144,46,0.45);
-    transform: translateX(calc(100% * var(--idx, 0)));
+    pointer-events: none; z-index: 1;
     transform-origin: center;
-    transition: transform 0.35s cubic-bezier(0.28, 0.84, 0.42, 1);
-    pointer-events: none; z-index: 1; will-change: transform;
+    transform: translateX(calc(100% * var(--idx, 0))) scaleX(var(--scale-x, 1)) scaleY(var(--scale-y, 1));
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    will-change: transform, opacity;
   }
   @media (prefers-color-scheme: light) {
     :root:not(.theme-dark) .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
   }
   :root.theme-light .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
 
-  /* 1. Lock the button flexbox to dead-center with zero padding */
+  /* Lock tab button flexbox to dead-center */
   .mobile-tabbar .nav-btn {
-    position: relative; 
-    z-index: 2; 
-    flex: 1 1 0%; 
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important; 
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-    border-radius: 999px; 
-    min-height: 48px;
-    background: transparent !important; 
-    border-color: transparent !important; 
-    box-shadow: none !important;
+    position: relative; z-index: 2; flex: 1 1 0%; 
+    display: flex !important; flex-direction: row !important;
+    align-items: center !important; justify-content: center !important;
+    padding: 0 !important; margin: 0 !important; gap: 0 !important;
+    border-radius: 999px; height: 100%;
+    max-width: 120px;
+    background: transparent !important; border-color: transparent !important; box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    color: var(--sidebar-text);
-    transition: color .2s ease;
+    color: var(--sidebar-text); 
+    transition: color .2s ease, opacity .25s ease, max-width .45s cubic-bezier(0.16, 1, 0.3, 1), flex .45s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .mobile-tabbar .nav-btn:hover, .mobile-tabbar .nav-btn:active, .mobile-tabbar .nav-btn:focus {
     background: transparent !important; border-color: transparent !important; box-shadow: none !important;
   }
   
-  /* 2. Override desktop height so the icon responds cleanly to active selection */
+  /* iOS 26 Zoom Transition & Spring Pop on Active Icon */
   .mobile-tabbar .nav-btn .nav-icon {
-    width: 24px !important;
-    height: 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    width: 24px !important; height: 24px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
     margin: 0 !important;
-    transform: scale(1);
-    transition: transform 0.35s cubic-bezier(0.28, 0.84, 0.42, 1), color 0.25s ease;
+    transform: scale(1) translateY(0);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
   }
 
   .mobile-tabbar .nav-btn.active .nav-icon {
-    transform: scale(1.15) !important;
+    transform: scale(1.18) translateY(-1px) !important;
   }
 
-  /* 3. Size the SVG cleanly inside its new centered box */
   .mobile-tabbar .nav-btn .nav-icon svg { 
-    width: 22px !important; 
-    height: 22px !important; 
-    display: block !important; 
-    margin: 0 !important; 
+    width: 22px !important; height: 22px !important; display: block !important; margin: 0 !important; 
   }
   
   .mobile-tabbar .nav-btn span:not(.nav-icon) { display: none; }
@@ -1807,7 +1846,7 @@ function renderNav(){
   if (mobileNav){
     if (!mobileNav.querySelector(".tab-indicator")) {
       mobileNav.innerHTML = `<div class="tab-indicator"></div>` + tabs.map(t => `
-        <button class="nav-btn ${state.activeTab===t.id?'active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">
+        <button class="nav-btn ${state.activeTab===t.id?'active':''}" data-tab="${t.id}" onclick="handleTabClick('${t.id}')">
           <span class="nav-icon">${t.icon}</span>
         </button>`).join("");
       setupTabbarDrag(mobileNav);
@@ -1818,22 +1857,58 @@ function renderNav(){
   }
 }
 
-/* ============================= iOS 26 NATIVE CAPSULE TAB ENGINE ============================= */
+/* ============================= iOS 26 LIQUID GLASS CAPSULE TAB ENGINE ============================= */
+function handleTabClick(targetId) {
+  const bar = document.getElementById("mobile-nav");
+  if (bar && bar.classList.contains("minimized")) {
+    bar.classList.remove("minimized");
+    isTabMinimized = false;
+    updateTabIndicator(bar, state.activeTab, true);
+    triggerHaptic('medium');
+    return;
+  }
+  switchTab(targetId);
+}
+
 function updateTabIndicator(bar, targetId, animate = true){
   const btns = Array.from(bar.querySelectorAll(".nav-btn"));
   if (!btns.length) return;
   
   const activeIdx = tabs.findIndex(t => t.id === targetId);
   const idx = activeIdx >= 0 ? activeIdx : 0;
+  const indicator = bar.querySelector(".tab-indicator");
   
-  const indicator = bar.querySelector('.tab-indicator');
+  if (!indicator) return;
+
+  const oldIdx = bar._lastIdx !== undefined ? bar._lastIdx : idx;
+  const distance = Math.abs(idx - oldIdx);
+  bar._lastIdx = idx;
+
   if (!animate) {
-    if (indicator) indicator.style.transition = 'none';
+    indicator.style.transition = 'none';
     bar.style.setProperty('--idx', idx);
     bar.offsetHeight; // force reflow
-    if (indicator) indicator.style.transition = '';
+    indicator.style.transition = '';
   } else {
     bar.style.setProperty('--idx', idx);
+    // iOS 26 Liquid Glass Asymmetric Velocity Morph
+    if (distance > 0 && bar._isRendered && !bar.classList.contains("minimized")) {
+      const movingRight = idx > oldIdx;
+      indicator.style.transformOrigin = movingRight ? 'left center' : 'right center';
+      const stretch = Math.min(1.35, 1 + distance * 0.08);
+      indicator.style.setProperty('--scale-x', stretch);
+      indicator.style.setProperty('--scale-y', 0.92);
+      
+      clearTimeout(bar._liquidTimer);
+      bar._liquidTimer = setTimeout(() => {
+        indicator.style.setProperty('--scale-x', 1);
+        indicator.style.setProperty('--scale-y', 1);
+      }, 160);
+    } else {
+      indicator.style.setProperty('--scale-x', 1);
+      indicator.style.setProperty('--scale-y', 1);
+    }
+    bar._isRendered = true;
   }
 
   btns.forEach((btn, i) => {
@@ -1866,6 +1941,7 @@ function setupTabbarDrag(bar){
   }, { passive: false });
 
   const updateDrag = (clientX) => {
+    if (bar.classList.contains("minimized")) return;
     const btns = getButtons();
     if (!btns.length) return;
 
@@ -1881,12 +1957,13 @@ function setupTabbarDrag(bar){
     if (activeBtn && activeBtn.dataset.tab && activeBtn.dataset.tab !== candidateId) {
       triggerHaptic('light');
       candidateId = activeBtn.dataset.tab;
-      bar.style.setProperty('--idx', activeIdx);
       btns.forEach(b => b.classList.toggle("active", b === activeBtn));
+      updateTabIndicator(bar, candidateId, true);
     }
   };
 
   bar.addEventListener("pointerdown", (e)=>{
+    if (bar.classList.contains("minimized")) return;
     const btn = e.target.closest(".nav-btn");
     if (!btn) return;
     dragging = true;
@@ -2521,22 +2598,58 @@ function removeCategory(kind, name){
   });
 }
 
-/* ============================= INIT & CAPACITOR BRIDGE BOOTSTRAP ============================= */
+/* ============================= INIT & SCROLL MINIMIZATION ============================= */
 window.addEventListener("beforeunload", () => { clearTimeout(saveTimer); commitSave(false); });
 window.addEventListener("resize", () => {
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
 });
 
+/* iOS 26 Tab Bar Scroll Minimize Engine */
+let lastScrollY = window.scrollY || 0;
+let scrollDelta = 0;
+let isTabMinimized = false;
+
 window.addEventListener("scroll", (e) => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
     if (e.target === sidebar || sidebar.contains(e.target)) return;
-    
     sidebar.style.width = '';
     sidebar.style.transition = '';
     sidebar.classList.add('collapsed');
     localStorage.setItem('sidebar_collapsed', true);
+  }
+
+  // Mobile Floating Bar Collapse on Scroll Down
+  if (window.innerWidth <= 760) {
+    const currentScrollY = window.scrollY || 0;
+    const diff = currentScrollY - lastScrollY;
+    
+    if (Math.abs(diff) > 2) {
+      if (diff > 0 && currentScrollY > 60) {
+        scrollDelta += diff;
+        if (scrollDelta > 30 && !isTabMinimized) {
+          isTabMinimized = true;
+          const nav = document.getElementById("mobile-nav");
+          if (nav) {
+            nav.classList.add("minimized");
+            triggerHaptic('light');
+          }
+        }
+      } else if (diff < 0) {
+        scrollDelta = 0;
+        if (isTabMinimized) {
+          isTabMinimized = false;
+          const nav = document.getElementById("mobile-nav");
+          if (nav) {
+            nav.classList.remove("minimized");
+            updateTabIndicator(nav, state.activeTab, true);
+            triggerHaptic('light');
+          }
+        }
+      }
+      lastScrollY = currentScrollY;
+    }
   }
 }, { passive: true, capture: true });
 
