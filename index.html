@@ -526,8 +526,11 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-sm);
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 th {
@@ -602,7 +605,10 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 .bar.income { background: var(--ledger-light); }
 .bar.expense { background: var(--brick); }
 .bar-month { font-size: 10px; color: var(--muted); font-weight: 500; }
-.line-chart-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.line-chart-wrap { 
+  width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; 
+  -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; overscroll-behavior-x: contain; 
+}
 
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
@@ -1322,16 +1328,21 @@ function setupSidebarGestures() {
 
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
-    if (e.target.closest('.ios-menu, .connect-card, .ios-alert')) return;
+    // 1. Immediately ignore if on mobile screen <= 760px or if sidebar is hidden
+    if (window.innerWidth <= 760 || window.getComputedStyle(sidebar).display === 'none') return;
+    // 2. Do not intercept touches inside interactive elements or scrollable wrappers unless touching the sidebar itself
+    if (e.target.closest('.table-wrap, .line-chart-wrap, .ios-menu, .connect-card, .ios-alert, button, input, select, textarea, label')) {
+      if (!sidebar.contains(e.target)) return;
+    }
 
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     const isCollapsed = sidebar.classList.contains('collapsed');
     startWidth = isCollapsed ? 78 : 240;
     
-    // Validate swipe start region (allow expanding from left edge/collapsed panel, retracting from open panel)
-    if (isCollapsed && touchStartX > 160) return;
-    if (!isCollapsed && touchStartX > 280) return;
+    // 3. Strictly limit drag start area so main content tables/charts are never hijacked
+    if (isCollapsed && !sidebar.contains(e.target) && touchStartX > 90) return;
+    if (!isCollapsed && !sidebar.contains(e.target) && touchStartX > 250) return;
 
     isTracking = true;
     isDragging = false;
