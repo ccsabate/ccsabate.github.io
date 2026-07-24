@@ -638,20 +638,39 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 
 /* ---------- Mobile App Glass Header (With Safe Area Insets) ---------- */
 .mobile-header {
-  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 60;
+  height: calc(64px + env(safe-area-inset-top));
   background: var(--mobile-chrome-bg); color: var(--sidebar-text);
-  padding: calc(12px + env(safe-area-inset-top)) 20px 14px 20px;
+  padding: calc(env(safe-area-inset-top)) 20px 0 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
   font-weight: 600; letter-spacing: -0.01em; font-size: 18px;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--mobile-chrome-border);
   box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+  overflow: hidden;
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              left 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.3s ease, box-shadow 0.3s ease;
 }
 .mobile-header .brand-sub {
   font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: .06em;
   text-transform: uppercase; color: rgba(243,239,225,0.6); font-weight: 500; margin-top: 3px;
 }
-.mobile-header-row { display: flex; justify-content: space-between; align-items: center; }
+.mobile-header-row { 
+  display: flex; justify-content: space-between; align-items: center; 
+  height: 100%; width: 100%;
+}
+.mobile-header-row > div:first-child {
+  transition: opacity 0.25s ease, max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 300px;
+  opacity: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
 .mobile-header-actions { display: flex; gap: 10px; align-items: center; }
 .mobile-icon-btn {
   padding: 0; font-size: 15px; width: 44px; height: 44px;
@@ -684,6 +703,37 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     margin: 0 !important; box-sizing: border-box !important;
   }
   .add-row .btn { border-radius: var(--radius-sm) !important; justify-content: center; }
+
+  /* iOS 26 Minimize to Top-Right Corner & Compact 50x50 Pill Size */
+  .mobile-header.minimized {
+    top: calc(12px + env(safe-area-inset-top)) !important;
+    left: calc(100% - 66px) !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--mobile-chrome-border) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35) !important;
+  }
+  .mobile-header.minimized .mobile-header-row > div:first-child {
+    opacity: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none;
+  }
+  .mobile-header.minimized .mobile-header-actions {
+    margin: 0 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    justify-content: center !important;
+  }
+  .mobile-header.minimized .more-btn.mobile-icon-btn {
+    background: transparent !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+  }
 
   /* iOS 26 Dynamic Floating Liquid Glass Tab Bar */
   .mobile-tabbar {
@@ -2605,10 +2655,11 @@ window.addEventListener("resize", () => {
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
 });
 
-/* iOS 26 Tab Bar Scroll Minimize Engine */
+/* iOS 26 Tab Bar & Header Scroll Minimize Engine */
 let lastScrollY = window.scrollY || 0;
 let scrollDelta = 0;
 let isTabMinimized = false;
+let isHeaderMinimized = false;
 
 window.addEventListener("scroll", (e) => {
   const sidebar = document.getElementById('sidebar');
@@ -2620,7 +2671,7 @@ window.addEventListener("scroll", (e) => {
     localStorage.setItem('sidebar_collapsed', true);
   }
 
-  // Mobile Floating Bar Collapse on Scroll Down
+  // Mobile Floating Bar & Header Collapse on Scroll Down
   if (window.innerWidth <= 760) {
     const currentScrollY = window.scrollY || 0;
     const diff = currentScrollY - lastScrollY;
@@ -2630,16 +2681,18 @@ window.addEventListener("scroll", (e) => {
     if (Math.abs(diff) > 2) {
       if (diff > 0 && currentScrollY > 60) {
         scrollDelta += diff;
-        if (scrollDelta > 30 && !isTabMinimized) {
+        if (scrollDelta > 30 && (!isTabMinimized || !isHeaderMinimized)) {
           isTabMinimized = true;
+          isHeaderMinimized = true;
           const nav = document.getElementById("mobile-nav");
-          if (nav) {
-            nav.classList.add("minimized");
-            triggerHaptic('light');
-          }
+          const header = document.querySelector(".mobile-header");
+          if (nav) nav.classList.add("minimized");
+          if (header) header.classList.add("minimized");
+          triggerHaptic('light');
         }
       } else if (diff < -6 && !isAtBottom) {
         scrollDelta = 0;
+        // Only maximize the tab bar on upward scroll!
         if (isTabMinimized) {
           isTabMinimized = false;
           const nav = document.getElementById("mobile-nav");
@@ -2651,6 +2704,26 @@ window.addEventListener("scroll", (e) => {
         }
       }
       lastScrollY = currentScrollY;
+    }
+
+    // Only maximize the header when reaching the very top of the page (<= 15px)
+    if (currentScrollY <= 15 && (isHeaderMinimized || isTabMinimized)) {
+      if (isHeaderMinimized) {
+        isHeaderMinimized = false;
+        const header = document.querySelector(".mobile-header");
+        if (header) {
+          header.classList.remove("minimized");
+          triggerHaptic('light');
+        }
+      }
+      if (isTabMinimized) {
+        isTabMinimized = false;
+        const nav = document.getElementById("mobile-nav");
+        if (nav) {
+          nav.classList.remove("minimized");
+          updateTabIndicator(nav, state.activeTab, true);
+        }
+      }
     }
   }
 }, { passive: true, capture: true });
