@@ -697,13 +697,15 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   :root.theme-light .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
     
+  /* iOS Liquid Glass Elastic Indicator */
   .tab-indicator {
     position: absolute; top: 6px; bottom: 6px; left: 6px;
     width: calc((100% - 12px) / 7);
     background: var(--gold); border-radius: 999px;
     box-shadow: 0 4px 14px rgba(184,144,46,0.45);
-    transform: translateX(calc(100% * var(--idx, 0)));
-    transition: transform var(--tx-duration, 0.85s) cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateX(calc(100% * var(--idx, 0))) scaleX(var(--scale-x, 1));
+    transform-origin: center;
+    transition: transform var(--tx-duration, 0.55s) cubic-bezier(0.35, 0.0, 0.25, 1);
     pointer-events: none; z-index: 1; will-change: transform;
   }
   @media (prefers-color-scheme: light) {
@@ -746,7 +748,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     justify-content: center !important;
     margin: 0 !important;
     transform: scale(1);
-    transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), color 0.35s ease;
+    transition: transform 0.45s cubic-bezier(0.35, 0.0, 0.25, 1), color 0.25s ease;
   }
 
   .mobile-tabbar .nav-btn.active .nav-icon {
@@ -1796,6 +1798,7 @@ function renderNav(){
   }
 }
 
+/* ============================= iOS LIQUID GLASS TAB ENGINE ============================= */
 function updateTabIndicator(bar, targetId, animate = true){
   const btns = Array.from(bar.querySelectorAll(".nav-btn"));
   if (!btns.length) return;
@@ -1803,15 +1806,30 @@ function updateTabIndicator(bar, targetId, animate = true){
   const activeIdx = tabs.findIndex(t => t.id === targetId);
   const idx = activeIdx >= 0 ? activeIdx : 0;
   
+  const oldIdx = parseFloat(bar.style.getPropertyValue('--idx')) || 0;
+  const diff = idx - oldIdx;
+  
   if (!animate) {
     bar.style.setProperty('--tx-duration', '0s');
+    bar.style.setProperty('--idx', idx);
+    bar.style.setProperty('--scale-x', 1);
+    bar.offsetHeight; // force reflow
   } else {
-    bar.style.setProperty('--tx-duration', '0.85s');
+    // Apple Liquid Glass timing duration
+    bar.style.setProperty('--tx-duration', '0.55s');
+    
+    // Dynamic Elastic Stretch Physics
+    if (diff !== 0) {
+      const stretch = Math.min(1.35, 1 + Math.abs(diff) * 0.12);
+      bar.style.setProperty('--scale-x', stretch);
+      
+      clearTimeout(bar._stretchTimer);
+      bar._stretchTimer = setTimeout(() => {
+        bar.style.setProperty('--scale-x', 1);
+      }, 200);
+    }
+    bar.style.setProperty('--idx', idx);
   }
-
-  if (!animate) bar.offsetHeight;
-
-  bar.style.setProperty('--idx', idx);
 
   btns.forEach((btn, i) => {
     btn.classList.toggle("active", i === idx);
@@ -1874,6 +1892,7 @@ function setupTabbarDrag(bar){
     const currentIdxFloat = dragRatio * (total - 1);
 
     bar.style.setProperty('--idx', currentIdxFloat);
+    bar.style.setProperty('--scale-x', 1);
     bar.style.transform = `scale(1.03) translateY(-2px) translateX(${bounceOffset}px)`;
 
     const clampedX = Math.max(minCenter, Math.min(clientX, maxCenter));
