@@ -703,7 +703,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     background: var(--gold); border-radius: 999px;
     box-shadow: 0 4px 14px rgba(184,144,46,0.45);
     transform: translateX(calc(100% * var(--idx, 0)));
-    transition: transform var(--tx-duration, 0.35s) cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform var(--tx-duration, 0.85s) cubic-bezier(0.25, 1, 0.5, 1);
     pointer-events: none; z-index: 1; will-change: transform;
   }
   @media (prefers-color-scheme: light) {
@@ -745,7 +745,12 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     align-items: center !important;
     justify-content: center !important;
     margin: 0 !important;
-    transform: none;
+    transform: scale(1);
+    transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), color 0.35s ease;
+  }
+
+  .mobile-tabbar .nav-btn.active .nav-icon {
+    transform: scale(1.15) !important;
   }
 
   /* 3. Size the SVG cleanly inside its new centered box */
@@ -1776,15 +1781,18 @@ function renderNav(){
 
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav){
-    mobileNav.innerHTML = `<div class="tab-indicator"></div>` + tabs.map(t => `
-      <button class="nav-btn ${state.activeTab===t.id?'active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">
-        <span class="nav-icon">${t.icon}</span>
-      </button>`).join("");
-      
-    setTimeout(() => {
-        setupTabbarDrag(mobileNav);
-        updateTabIndicator(mobileNav, state.activeTab, false);
-    }, 0);
+    // PREVENT DOM DESTRUCTION: Only initialize innerHTML if not already rendered
+    if (!mobileNav.querySelector(".tab-indicator")) {
+      mobileNav.innerHTML = `<div class="tab-indicator"></div>` + tabs.map(t => `
+        <button class="nav-btn ${state.activeTab===t.id?'active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">
+          <span class="nav-icon">${t.icon}</span>
+        </button>`).join("");
+      setupTabbarDrag(mobileNav);
+      updateTabIndicator(mobileNav, state.activeTab, false);
+    } else {
+      // If DOM exists, smoothly slide the indicator to the target tab without resetting animation!
+      updateTabIndicator(mobileNav, state.activeTab, true);
+    }
   }
 }
 
@@ -1798,7 +1806,7 @@ function updateTabIndicator(bar, targetId, animate = true){
   if (!animate) {
     bar.style.setProperty('--tx-duration', '0s');
   } else {
-    bar.style.setProperty('--tx-duration', '0.35s');
+    bar.style.setProperty('--tx-duration', '0.85s');
   }
 
   if (!animate) bar.offsetHeight;
