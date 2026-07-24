@@ -642,6 +642,11 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   :root.theme-light .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
   .mobile-tabbar.dragging .nav-btn.active .nav-icon { transform: scale(1.15) !important; }
+  
+  /* Lift toast above floating tabbar on mobile */
+  .toast {
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 /* ---------- Save Controls & Toasts ---------- */
@@ -1166,6 +1171,46 @@ function toggleSidebar() {
   localStorage.setItem('sidebar_collapsed', isCollapsed);
 }
 
+/* ============================= SIDEBAR SLIDE GESTURES ============================= */
+function setupSidebarGestures() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (e.changedTouches.length !== 1) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    // Must be a clean horizontal swipe longer than 35px
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 35) {
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      
+      // Swipe Right from left edge (< 120px) or while touching collapsed sidebar -> Expand
+      if (deltaX > 0 && isCollapsed && touchStartX < 120) {
+        sidebar.classList.remove('collapsed');
+        localStorage.setItem('sidebar_collapsed', 'false');
+        triggerHaptic('light');
+      }
+      // Swipe Left on open sidebar -> Collapse
+      else if (deltaX < 0 && !isCollapsed && touchStartX < 280) {
+        sidebar.classList.add('collapsed');
+        localStorage.setItem('sidebar_collapsed', 'true');
+        triggerHaptic('light');
+      }
+    }
+  }, { passive: true });
+}
+
 function toggleActionsMenu(e){
   const menu = document.getElementById("actions-menu");
   if (menu.classList.contains("show")) closeActionsMenu();
@@ -1280,6 +1325,7 @@ function renderConnectOverlay(){
   }
 }
 
+/* ============================= INSTANT OFFLINE-FIRST BOOTSTRAPPER ============================= */
 function loadState(){
   const sidebarState = localStorage.getItem('sidebar_collapsed');
   if (sidebarState === 'false') {
@@ -1288,16 +1334,31 @@ function loadState(){
     document.getElementById('sidebar').classList.add('collapsed');
   }
 
-  initFirebase();
-  renderConnectOverlay();
-  const savedCode = localStorage.getItem(SYNC_CODE_KEY);
-  if (savedCode && firebaseReady){
-    connectToCode(savedCode);
-  } else {
-    document.getElementById("connect-overlay").classList.add("show");
-  }
+  // 1. INSTANT LOAD: Read synchronously from disk cache first in ~0ms
+  try {
+    const localData = localStorage.getItem(STORAGE_KEY);
+    if (localData) {
+      state = Object.assign(defaultState(), JSON.parse(localData));
+    }
+  } catch(e) {}
+
+  // Render UI instantly without waiting for network!
   render();
+  saveStatus = navigator.onLine ? "saved" : "offline";
   updateSaveIndicator();
+  setupSidebarGestures();
+
+  // 2. BACKGROUND SYNC: Initialize Firebase and attach cloud listener silently
+  setTimeout(() => {
+    initFirebase();
+    renderConnectOverlay();
+    const savedCode = localStorage.getItem(SYNC_CODE_KEY);
+    if (savedCode && firebaseReady){
+      connectToCode(savedCode); // Merges live cloud updates automatically when ready
+    } else if (!savedCode) {
+      document.getElementById("connect-overlay").classList.add("show");
+    }
+  }, 50);
 }
 
 let saveTimer = null;
