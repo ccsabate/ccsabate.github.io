@@ -1166,6 +1166,8 @@ function subscribeToDoc(){
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
+  sidebar.style.width = '';
+  sidebar.style.transition = '';
   sidebar.classList.toggle('collapsed');
   const isCollapsed = sidebar.classList.contains('collapsed');
   localStorage.setItem('sidebar_collapsed', isCollapsed);
@@ -1173,42 +1175,133 @@ function toggleSidebar() {
 
 /* ============================= SIDEBAR SLIDE GESTURES ============================= */
 function setupSidebarGestures() {
-  let touchStartX = 0;
-  let touchStartY = 0;
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
 
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let startWidth = 0;
+  let isTracking = false;
+  let isDragging = false;
+  let gestureDirection = null;
+  let cleanupTimer = null;
+
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
+    if (e.target.closest('.ios-menu, .connect-card, .ios-alert')) return;
+
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    startWidth = isCollapsed ? 78 : 240;
+    
+    // Validate swipe start region (allow expanding from left edge/collapsed panel, retracting from open panel)
+    if (isCollapsed && touchStartX > 160) return;
+    if (!isCollapsed && touchStartX > 280) return;
+
+    isTracking = true;
+    isDragging = false;
+    gestureDirection = null;
+    clearTimeout(cleanupTimer);
   }, { passive: true });
 
-  document.addEventListener('touchend', (e) => {
-    if (e.changedTouches.length !== 1) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
+  document.addEventListener('touchmove', (e) => {
+    if (!isTracking || e.touches.length !== 1) return;
 
-    // Must be a clean horizontal swipe longer than 35px
-    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 35) {
-      const isCollapsed = sidebar.classList.contains('collapsed');
-      
-      // Swipe Right from left edge (< 120px) or while touching collapsed sidebar -> Expand
-      if (deltaX > 0 && isCollapsed && touchStartX < 120) {
-        sidebar.classList.remove('collapsed');
-        localStorage.setItem('sidebar_collapsed', 'false');
-        triggerHaptic('light');
-      }
-      // Swipe Left on open sidebar -> Collapse
-      else if (deltaX < 0 && !isCollapsed && touchStartX < 280) {
-        sidebar.classList.add('collapsed');
-        localStorage.setItem('sidebar_collapsed', 'true');
-        triggerHaptic('light');
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - touchStartX;
+    const deltaY = currentY - touchStartY;
+
+    // Lock direction once movement exceeds 6px
+    if (gestureDirection === null) {
+      if (Math.hypot(deltaX, deltaY) > 6) {
+        if (Math.abs(deltaY) > Math.abs(deltaX) * 1.2) {
+          gestureDirection = 'vertical';
+          isTracking = false;
+          return;
+        } else if (Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+          // Ignore invalid directional pulls
+          if (startWidth === 78 && deltaX < 0) { isTracking = false; return; }
+          if (startWidth === 240 && deltaX > 0 && touchStartX > 240) { isTracking = false; return; }
+          
+          gestureDirection = 'horizontal';
+          isDragging = true;
+          // Disable CSS width transition during live drag for instant 1:1 finger tracking
+          sidebar.style.transition = 'background 0.3s ease, box-shadow 0.3s ease';
+        }
       }
     }
-  }, { passive: true });
+
+    if (isDragging) {
+      if (e.cancelable) e.preventDefault();
+
+      let targetWidth = startWidth + deltaX;
+      targetWidth = Math.max(78, Math.min(240, targetWidth));
+      sidebar.style.width = targetWidth + 'px';
+
+      // Toggle collapsed state cleanly at threshold so labels and header text reveal/hide dynamically
+      if (targetWidth > 95 && sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+      } else if (targetWidth <= 95 && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+      }
+    }
+  }, { passive: false });
+
+  const endGesture = (e) => {
+    if (!isTracking) return;
+    const wasDragging = isDragging;
+    isTracking = false;
+    isDragging = false;
+    gestureDirection = null;
+
+    if (!wasDragging) return;
+
+    let touchEndX = touchStartX;
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      touchEndX = e.changedTouches[0].clientX;
+    }
+    const deltaX = touchEndX - touchStartX;
+
+    // Evaluate momentum flick velocity or midpoint threshold (159px)
+    let shouldOpen = false;
+    if (deltaX > 35) {
+      shouldOpen = true;
+    } else if (deltaX < -35) {
+      shouldOpen = false;
+    } else {
+      const currentWidth = parseFloat(sidebar.style.width) || (sidebar.classList.contains('collapsed') ? 78 : 240);
+      shouldOpen = currentWidth > 159;
+    }
+
+    // Restore smooth CSS cubic-bezier transition for completion snap animation
+    sidebar.style.transition = '';
+    sidebar.style.width = (shouldOpen ? 240 : 78) + 'px';
+
+    const wasCollapsed = (startWidth === 78);
+    const isNowCollapsed = !shouldOpen;
+
+    if (shouldOpen) {
+      sidebar.classList.remove('collapsed');
+      localStorage.setItem('sidebar_collapsed', 'false');
+    } else {
+      sidebar.classList.add('collapsed');
+      localStorage.setItem('sidebar_collapsed', 'true');
+    }
+
+    if (wasCollapsed !== isNowCollapsed) {
+      triggerHaptic('light');
+    }
+
+    // Clean up inline style override after snap animation finishes
+    cleanupTimer = setTimeout(() => {
+      sidebar.style.width = '';
+    }, 320);
+  };
+
+  document.addEventListener('touchend', endGesture, { passive: true });
+  document.addEventListener('touchcancel', endGesture, { passive: true });
 }
 
 function toggleActionsMenu(e){
@@ -2222,6 +2315,8 @@ window.addEventListener("resize", () => {
 window.addEventListener("scroll", () => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
+    sidebar.style.width = '';
+    sidebar.style.transition = '';
     sidebar.classList.add('collapsed');
     localStorage.setItem('sidebar_collapsed', true);
   }
@@ -2231,6 +2326,8 @@ document.addEventListener("click", (e) => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
     if (!sidebar.contains(e.target)) {
+      sidebar.style.width = '';
+      sidebar.style.transition = '';
       sidebar.classList.add('collapsed');
       localStorage.setItem('sidebar_collapsed', true);
     }
