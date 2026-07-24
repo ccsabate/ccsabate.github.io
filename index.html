@@ -685,7 +685,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   .add-row .btn { border-radius: var(--radius-sm) !important; justify-content: center; }
 
-  /* iOS Dynamic Floating Glass Tabbar */
+  /* iOS 26 Dynamic Floating Glass Tabbar */
   .mobile-tabbar {
     display: flex; position: fixed; left: 14px; right: 14px;
     bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 60;
@@ -696,23 +696,22 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     box-shadow: 0 16px 40px rgba(0,0,0,0.28);
     overflow: hidden;
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-    transition: transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s ease, background 0.3s ease;
-    will-change: transform;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
   }
   @media (prefers-color-scheme: light) {
     :root:not(.theme-dark) .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
   }
   :root.theme-light .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
     
-  /* iOS Liquid Glass Elastic Indicator */
+  /* iOS 26 Native Liquid Glass Selection Capsule */
   .tab-indicator {
     position: absolute; top: 6px; bottom: 6px; left: 6px;
     width: calc((100% - 12px) / 7);
     background: var(--gold); border-radius: 999px;
     box-shadow: 0 4px 14px rgba(184,144,46,0.45);
-    transform: translateX(calc(100% * var(--idx, 0))) scaleX(var(--scale-x, 1));
+    transform: translateX(calc(100% * var(--idx, 0)));
     transform-origin: center;
-    transition: transform var(--tx-duration, 0.55s) cubic-bezier(0.35, 0.0, 0.25, 1);
+    transition: transform 0.35s cubic-bezier(0.28, 0.84, 0.42, 1);
     pointer-events: none; z-index: 1; will-change: transform;
   }
   @media (prefers-color-scheme: light) {
@@ -746,7 +745,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     background: transparent !important; border-color: transparent !important; box-shadow: none !important;
   }
   
-  /* 2. Override the 18px desktop height so the box matches the icon */
+  /* 2. Override desktop height so the icon responds cleanly to active selection */
   .mobile-tabbar .nav-btn .nav-icon {
     width: 24px !important;
     height: 24px !important;
@@ -755,7 +754,7 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     justify-content: center !important;
     margin: 0 !important;
     transform: scale(1);
-    transition: transform 0.45s cubic-bezier(0.35, 0.0, 0.25, 1), color 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.28, 0.84, 0.42, 1), color 0.25s ease;
   }
 
   .mobile-tabbar .nav-btn.active .nav-icon {
@@ -772,16 +771,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   
   .mobile-tabbar .nav-btn span:not(.nav-icon) { display: none; }
   .mobile-tabbar .nav-btn.active { color: var(--nav-active-text); }
-  
-  .mobile-tabbar.dragging {
-    z-index: 65; transition: none;
-    box-shadow: 0 22px 50px rgba(0,0,0,0.36);
-  }
-  @media (prefers-color-scheme: light) {
-    :root:not(.theme-dark) .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
-  }
-  :root.theme-light .mobile-tabbar.dragging { box-shadow: 0 22px 50px rgba(0,0,0,0.36), 0 1px 0 rgba(255,255,255,0.3) inset; }
-  .mobile-tabbar.dragging .nav-btn.active .nav-icon { transform: scale(1.15) !important; }
   
   /* Lift toast above floating tabbar on mobile */
   .toast {
@@ -1348,9 +1337,7 @@ function setupSidebarGestures() {
 
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
-    // 1. Immediately ignore if on mobile screen <= 760px or if sidebar is hidden
     if (window.innerWidth <= 760 || window.getComputedStyle(sidebar).display === 'none') return;
-    // 2. Do not intercept touches inside interactive elements or scrollable wrappers unless touching the sidebar itself
     if (e.target.closest('.table-wrap, .line-chart-wrap, .ios-menu, .connect-card, .ios-alert, button, input, select, textarea, label')) {
       if (!sidebar.contains(e.target)) return;
     }
@@ -1360,7 +1347,6 @@ function setupSidebarGestures() {
     const isCollapsed = sidebar.classList.contains('collapsed');
     startWidth = isCollapsed ? 78 : 240;
     
-    // 3. Strictly limit drag start area so main content tables/charts are never hijacked
     if (isCollapsed && !sidebar.contains(e.target) && touchStartX > 90) return;
     if (!isCollapsed && !sidebar.contains(e.target) && touchStartX > 250) return;
 
@@ -1378,22 +1364,18 @@ function setupSidebarGestures() {
     const deltaX = currentX - touchStartX;
     const deltaY = currentY - touchStartY;
 
-    // Lock direction once movement exceeds 6px
     if (gestureDirection === null) {
       if (Math.hypot(deltaX, deltaY) > 6) {
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
-          // Immediately abandon tracking if user is attempting to scroll vertically!
           gestureDirection = 'vertical';
           isTracking = false;
           return;
         } else {
-          // Ignore invalid directional pulls
           if (startWidth === 78 && deltaX < 0) { isTracking = false; return; }
           if (startWidth === 240 && deltaX > 0 && touchStartX > 240) { isTracking = false; return; }
           
           gestureDirection = 'horizontal';
           isDragging = true;
-          // Disable CSS width transition during live drag for instant 1:1 finger tracking
           sidebar.style.transition = 'background 0.3s ease, box-shadow 0.3s ease';
         }
       }
@@ -1406,7 +1388,6 @@ function setupSidebarGestures() {
       targetWidth = Math.max(78, Math.min(240, targetWidth));
       sidebar.style.width = targetWidth + 'px';
 
-      // Switch cleanly at 175px (the limit width where text would run out of room).
       if (targetWidth > 175 && sidebar.classList.contains('collapsed')) {
         sidebar.classList.remove('collapsed');
       } else if (targetWidth <= 175 && !sidebar.classList.contains('collapsed')) {
@@ -1430,7 +1411,6 @@ function setupSidebarGestures() {
     }
     const deltaX = touchEndX - touchStartX;
 
-    // Evaluate momentum flick velocity or midpoint threshold (159px)
     let shouldOpen = false;
     if (deltaX > 35) {
       shouldOpen = true;
@@ -1441,7 +1421,6 @@ function setupSidebarGestures() {
       shouldOpen = currentWidth > 159;
     }
 
-    // Restore smooth CSS cubic-bezier transition for completion snap animation
     sidebar.style.transition = '';
     sidebar.style.width = (shouldOpen ? 240 : 78) + 'px';
 
@@ -1460,7 +1439,6 @@ function setupSidebarGestures() {
       triggerHaptic('light');
     }
 
-    // Clean up inline style override after snap animation finishes
     cleanupTimer = setTimeout(() => {
       sidebar.style.width = '';
     }, 320);
@@ -1623,7 +1601,6 @@ function loadState(){
     document.getElementById('sidebar').classList.add('collapsed');
   }
 
-  // 1. INSTANT LOAD: Read synchronously from disk cache first in ~0ms
   try {
     const localData = localStorage.getItem(STORAGE_KEY);
     if (localData) {
@@ -1632,19 +1609,17 @@ function loadState(){
     }
   } catch(e) {}
 
-  // Render UI instantly without waiting for network!
   render();
   saveStatus = navigator.onLine ? "saved" : "offline";
   updateSaveIndicator();
   setupSidebarGestures();
 
-  // 2. BACKGROUND SYNC: Initialize Firebase and attach cloud listener silently
   setTimeout(() => {
     initFirebase();
     renderConnectOverlay();
     const savedCode = localStorage.getItem(SYNC_CODE_KEY);
     if (savedCode && firebaseReady){
-      connectToCode(savedCode); // Merges live cloud updates automatically when ready
+      connectToCode(savedCode);
     } else if (!savedCode) {
       document.getElementById("connect-overlay").classList.add("show");
     }
@@ -1830,7 +1805,6 @@ function renderNav(){
 
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav){
-    // PREVENT DOM DESTRUCTION: Only initialize innerHTML if not already rendered
     if (!mobileNav.querySelector(".tab-indicator")) {
       mobileNav.innerHTML = `<div class="tab-indicator"></div>` + tabs.map(t => `
         <button class="nav-btn ${state.activeTab===t.id?'active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">
@@ -1839,13 +1813,12 @@ function renderNav(){
       setupTabbarDrag(mobileNav);
       updateTabIndicator(mobileNav, state.activeTab, false);
     } else {
-      // If DOM exists, smoothly slide the indicator to the target tab without resetting animation!
       updateTabIndicator(mobileNav, state.activeTab, true);
     }
   }
 }
 
-/* ============================= iOS LIQUID GLASS TAB ENGINE ============================= */
+/* ============================= iOS 26 NATIVE CAPSULE TAB ENGINE ============================= */
 function updateTabIndicator(bar, targetId, animate = true){
   const btns = Array.from(bar.querySelectorAll(".nav-btn"));
   if (!btns.length) return;
@@ -1853,28 +1826,13 @@ function updateTabIndicator(bar, targetId, animate = true){
   const activeIdx = tabs.findIndex(t => t.id === targetId);
   const idx = activeIdx >= 0 ? activeIdx : 0;
   
-  const oldIdx = parseFloat(bar.style.getPropertyValue('--idx')) || 0;
-  const diff = idx - oldIdx;
-  
+  const indicator = bar.querySelector('.tab-indicator');
   if (!animate) {
-    bar.style.setProperty('--tx-duration', '0s');
+    if (indicator) indicator.style.transition = 'none';
     bar.style.setProperty('--idx', idx);
-    bar.style.setProperty('--scale-x', 1);
     bar.offsetHeight; // force reflow
+    if (indicator) indicator.style.transition = '';
   } else {
-    // Apple Liquid Glass timing duration
-    bar.style.setProperty('--tx-duration', '0.85s');
-    
-    // Dynamic Elastic Stretch Physics
-    if (diff !== 0) {
-      const stretch = Math.min(1.35, 1 + Math.abs(diff) * 0.12);
-      bar.style.setProperty('--scale-x', stretch);
-      
-      clearTimeout(bar._stretchTimer);
-      bar._stretchTimer = setTimeout(() => {
-        bar.style.setProperty('--scale-x', 1);
-      }, 250);
-    }
     bar.style.setProperty('--idx', idx);
   }
 
@@ -1916,39 +1874,14 @@ function setupTabbarDrag(bar){
     const border = 1;
     const total = btns.length;
 
-    const innerWidth = barRect.width - (border * 2) - (padding * 2);
-    const tabWidth = innerWidth / total;
-    
-    const minCenter = barRect.left + border + padding + (tabWidth / 2);
-    const maxCenter = barRect.left + barRect.width - border - padding - (tabWidth / 2);
-
-    let centerPos = clientX;
-    let bounceOffset = 0;
-
-    if (clientX < minCenter) {
-      const overshoot = clientX - minCenter;
-      bounceOffset = -Math.pow(Math.abs(overshoot), 0.72) * 0.65;
-      centerPos = minCenter;
-    } else if (clientX > maxCenter) {
-      const overshoot = clientX - maxCenter;
-      bounceOffset = Math.pow(overshoot, 0.72) * 0.65;
-      centerPos = maxCenter;
-    }
-
-    const dragRatio = (centerPos - minCenter) / (maxCenter - minCenter || 1);
-    const currentIdxFloat = dragRatio * (total - 1);
-
-    bar.style.setProperty('--idx', currentIdxFloat);
-    bar.style.setProperty('--scale-x', 1);
-    bar.style.transform = `scale(1.03) translateY(-2px) translateX(${bounceOffset}px)`;
-
-    const clampedX = Math.max(minCenter, Math.min(clientX, maxCenter));
-    const activeIdx = Math.round(((clampedX - minCenter) / (maxCenter - minCenter)) * (total - 1));
+    const clampedX = Math.max(barRect.left + border + padding, Math.min(clientX, barRect.left + barRect.width - border - padding));
+    const activeIdx = Math.min(total - 1, Math.max(0, Math.floor(((clampedX - (barRect.left + border + padding)) / (barRect.width - (border * 2) - (padding * 2))) * total)));
     const activeBtn = btns[activeIdx];
     
     if (activeBtn && activeBtn.dataset.tab && activeBtn.dataset.tab !== candidateId) {
       triggerHaptic('light');
       candidateId = activeBtn.dataset.tab;
+      bar.style.setProperty('--idx', activeIdx);
       btns.forEach(b => b.classList.toggle("active", b === activeBtn));
     }
   };
@@ -1958,8 +1891,6 @@ function setupTabbarDrag(bar){
     if (!btn) return;
     dragging = true;
     candidateId = btn.dataset.tab;
-    bar.classList.add("dragging");
-    bar.style.setProperty('--tx-duration', '0.08s');
     updateDrag(e.clientX);
     try{ bar.setPointerCapture(e.pointerId); }catch(err){}
   });
@@ -1972,9 +1903,7 @@ function setupTabbarDrag(bar){
   const endDrag = (e)=>{
     if (!dragging) return;
     dragging = false;
-    bar.classList.remove("dragging");
-    bar.style.transform = "";
-    if (candidateId) {
+    if (candidateId && candidateId !== state.activeTab) {
       switchTab(candidateId);
     } else {
       updateTabIndicator(bar, state.activeTab, true);
@@ -2248,7 +2177,6 @@ function setBudget(cat, val){ state.budgets[cat] = parseFloat(val)||0; saveState
 
 /* ============================= SAVINGS & EMERGENCY FUND ============================= */
 function renderSavings(){
-  // 1. Emergency Fund Calculations
   const ef = state.emergencyFund || { monthsTarget: 6, saved: 0, monthly: 0 };
   const avgExp = getAvgMonthlyExpense();
   const efGoal = avgExp * (ef.monthsTarget || 6);
@@ -2264,7 +2192,6 @@ function renderSavings(){
     efEstDate = "Goal Reached!";
   }
 
-  // 2. Regular Savings Goals Calculations
   const goals = state.savingsGoals || [];
   const totalGoal = goals.reduce((s,g)=>s+(+g.goal||0), efGoal);
   const totalSaved = goals.reduce((s,g)=>s+(+g.saved||0), efSaved);
@@ -2604,7 +2531,6 @@ window.addEventListener("resize", () => {
 window.addEventListener("scroll", (e) => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed') && window.innerWidth > 760) {
-    // DO NOT collapse if the scroll event is happening INSIDE the sidebar!
     if (e.target === sidebar || sidebar.contains(e.target)) return;
     
     sidebar.style.width = '';
