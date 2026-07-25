@@ -1281,7 +1281,6 @@ function updateThemeUI() {
 window.addEventListener('online', () => {
   if (syncCode) {
     showToast_(false, "Back online! Syncing...");
-    // Only push to cloud if we actively made offline edits; otherwise let onSnapshot pull safely
     if (isDirty) {
       commitSave(false, true);
     } else {
@@ -1365,7 +1364,12 @@ async function connectExisting(){
     const snap = await docRef(code).get();
     if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); triggerHaptic('heavy'); return; }
     localStorage.setItem(SYNC_CODE_KEY, code);
+    
+    // Protect the local tab view so setup doesn't yank you away!
+    const currentTab = state.activeTab || "dashboard";
     state = Object.assign(defaultState(), snap.data());
+    state.activeTab = currentTab;
+    
     isDirty = false;
     migrateEmergencyFund();
     connectToCode(code);
@@ -1394,21 +1398,16 @@ function connectToCode(code){
   updateSaveIndicator();
 }
 
-/* CRDT-lite Reconciler: Merges arrays by ID & timestamps, preserving new entries across devices */
+/* CRDT-lite Reconciler: Merges arrays by ID & timestamps, preserving local view state */
 function reconcileState(local, remote) {
   const merged = Object.assign(defaultState(), remote);
   const localNewer = (local.lastModified || 0) > (remote.lastModified || 0);
   const allDeleted = new Set([...(local.deletedIds || []), ...(remote.deletedIds || [])]);
   merged.deletedIds = Array.from(allDeleted).slice(-200);
 
-  // Take root objects from whichever state was edited more recently
+  // Take financial root objects from whichever state was edited more recently
   if (localNewer) {
     merged.currency = local.currency || merged.currency;
-    merged.activeTab = local.activeTab || merged.activeTab;
-    merged.dashboardYear = local.dashboardYear || merged.dashboardYear;
-    merged.dashboardMonth = local.dashboardMonth || merged.dashboardMonth;
-    merged.budgetYear = local.budgetYear || merged.budgetYear;
-    merged.budgetMonth = local.budgetMonth || merged.budgetMonth;
     merged.budgets = Object.assign({}, remote.budgets, local.budgets);
     merged.emergencyFund = Object.assign({}, remote.emergencyFund, local.emergencyFund);
     merged.categories = {
@@ -1416,6 +1415,13 @@ function reconcileState(local, remote) {
       expense: Array.from(new Set([...(remote.categories?.expense||[]), ...(local.categories?.expense||[])]))
     };
   }
+
+  // Always preserve local UI view states (tabs & date filters) so devices navigate independently!
+  merged.activeTab = local.activeTab;
+  merged.dashboardYear = local.dashboardYear;
+  merged.dashboardMonth = local.dashboardMonth;
+  merged.budgetYear = local.budgetYear;
+  merged.budgetMonth = local.budgetMonth;
 
   // Smart Array Union: preserves offline additions and respects deletions via tombstones
   const mergeArrayById = (localArr = [], remoteArr = []) => {
@@ -1427,12 +1433,12 @@ function reconcileState(local, remote) {
       if (!item || !item.id || allDeleted.has(item.id)) return;
       const existing = map.get(item.id);
       if (!existing) {
-        map.set(item.id, item); // Keep newly created offline entry!
+        map.set(item.id, item);
       } else {
         const localTime = item.updatedAt || local.lastModified || 0;
         const remoteTime = existing.updatedAt || remote.lastModified || 0;
         if (localTime >= remoteTime) {
-          map.set(item.id, item); // Keep whichever modification is newer
+          map.set(item.id, item);
         }
       }
     });
@@ -1456,15 +1462,25 @@ function subscribeToDoc(){
     const json = JSON.stringify(remoteData);
     if (json === lastPushedJSON) return;
 
+    // Snapshot this device's current UI navigation tab and date filters!
+    const localView = {
+      activeTab: state.activeTab,
+      dashboardYear: state.dashboardYear,
+      dashboardMonth: state.dashboardMonth,
+      budgetYear: state.budgetYear,
+      budgetMonth: state.budgetMonth
+    };
+
     if (!isDirty) {
-      // No local edits made since opening — safe to accept remote cloud state
       state = Object.assign(defaultState(), remoteData);
     } else {
-      // Local offline edits exist — run intelligent merge and sync both ways!
       state = reconcileState(state, remoteData);
       commitSave(false, true);
     }
     
+    // Immediately re-apply local UI view state so you are never yanked to another tab or month
+    Object.assign(state, localView);
+
     migrateEmergencyFund();
     render();
     saveStatus = navigator.onLine ? "saved" : "offline";
@@ -1773,7 +1789,7 @@ function loadState(){
     }
   } catch(e) {}
 
-  isDirty = false; // Fresh boot is clean by default
+  isDirty = false;
   render();
   saveStatus = navigator.onLine ? "saved" : "offline";
   updateSaveIndicator();
@@ -1794,7 +1810,7 @@ function loadState(){
 let saveTimer = null;
 function saveState(){
   state.lastModified = Date.now();
-  isDirty = true; // Mark as actively edited on this device!
+  isDirty = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { commitSave(false, true); }, 400);
 }
@@ -1819,13 +1835,17 @@ function commitSave(showToast, force = false){
   // CRITICAL GUARD: Prevent idle devices from pushing stale memory when waking up!
   if (!isDirty && !force) return;
 
-  const json = JSON.stringify(state);
+  // Clean payload: send only financial data to Firestore, stripping UI navigation state!
+  const cloudPayload = Object.assign({}, state);
+  delete cloudPayload.activeTab;
+
+  const json = JSON.stringify(cloudPayload);
   if (json === lastPushedJSON) return;
   lastPushedJSON = json;
 
-  docRef(syncCode).set(state)
+  docRef(syncCode).set(cloudPayload)
     .then(()=>{
-      isDirty = false; // Successfully synced to cloud!
+      isDirty = false;
       saveStatus = "saved";
       updateSaveIndicator();
       if (showToast) showToast_(false, "✓ Synced");
