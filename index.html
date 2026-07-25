@@ -1215,13 +1215,17 @@ function triggerHaptic(style = 'light') {
 </div>
 
 <script>
-/* ============================= STATE ============================= */
+/* ============================= STATE & CRDT-LITE RECONCILIATION ============================= */
 const STORAGE_KEY = "finance_tracker_state_v1";
 const uid = () => Math.random().toString(36).slice(2,10);
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+let isDirty = false; // Prevents idle wakeup events from accidentally overwriting remote cloud data
+
 function defaultState(){
   return {
+    lastModified: Date.now(),
+    deletedIds: [],
     currency: "₱",
     activeTab: "dashboard",
     dashboardYear: 2026,
@@ -1233,8 +1237,8 @@ function defaultState(){
       expense: ["Housing / Rent","Utilities","Groceries","Transportation","Insurance","Debt Payments","Dining Out","Entertainment","Subscriptions","Personal Care","Shopping","Health & Medical","Education","Miscellaneous"]
     },
     transactions: [
-      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, account:"Debit Card"},
-      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, account:"Bank Transfer"}
+      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, account:"Debit Card", updatedAt: Date.now()},
+      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, account:"Bank Transfer", updatedAt: Date.now()}
     ],
     budgets: {"Groceries":400,"Housing / Rent":1200,"Utilities":150,"Salary":3200},
     emergencyFund: {
@@ -1243,13 +1247,13 @@ function defaultState(){
       monthly: 50
     },
     savingsGoals: [
-      {id:uid(), name:"Travel", goal:200, starting:10, monthly:20, saved:110}
+      {id:uid(), name:"Travel", goal:200, starting:10, monthly:20, saved:110, updatedAt: Date.now()}
     ],
     debts: [
-      {id:uid(), name:"Credit Card - Visa", type:"Credit Card", original:5000, current:3200, rate:24, minPayment:150, extraPayment:50}
+      {id:uid(), name:"Credit Card - Visa", type:"Credit Card", original:5000, current:3200, rate:24, minPayment:150, extraPayment:50, updatedAt: Date.now()}
     ],
     netWorth: [
-      {id:uid(), month:"Jan 2026", cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0}
+      {id:uid(), month:"Jan 2026", cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0, updatedAt: Date.now()}
     ]
   };
 }
@@ -1277,7 +1281,12 @@ function updateThemeUI() {
 window.addEventListener('online', () => {
   if (syncCode) {
     showToast_(false, "Back online! Syncing...");
-    commitSave(false);
+    // Only push to cloud if we actively made offline edits; otherwise let onSnapshot pull safely
+    if (isDirty) {
+      commitSave(false, true);
+    } else {
+      subscribeToDoc();
+    }
   }
 });
 window.addEventListener('offline', () => {
@@ -1337,6 +1346,7 @@ async function startNewTracker(){
     await docRef(code).set(fresh);
     localStorage.setItem(SYNC_CODE_KEY, code);
     state = fresh;
+    isDirty = false;
     connectToCode(code);
     triggerHaptic('medium');
   }catch(e){
@@ -1356,6 +1366,7 @@ async function connectExisting(){
     if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); triggerHaptic('heavy'); return; }
     localStorage.setItem(SYNC_CODE_KEY, code);
     state = Object.assign(defaultState(), snap.data());
+    isDirty = false;
     migrateEmergencyFund();
     connectToCode(code);
     triggerHaptic('medium');
@@ -1383,14 +1394,77 @@ function connectToCode(code){
   updateSaveIndicator();
 }
 
+/* CRDT-lite Reconciler: Merges arrays by ID & timestamps, preserving new entries across devices */
+function reconcileState(local, remote) {
+  const merged = Object.assign(defaultState(), remote);
+  const localNewer = (local.lastModified || 0) > (remote.lastModified || 0);
+  const allDeleted = new Set([...(local.deletedIds || []), ...(remote.deletedIds || [])]);
+  merged.deletedIds = Array.from(allDeleted).slice(-200);
+
+  // Take root objects from whichever state was edited more recently
+  if (localNewer) {
+    merged.currency = local.currency || merged.currency;
+    merged.activeTab = local.activeTab || merged.activeTab;
+    merged.dashboardYear = local.dashboardYear || merged.dashboardYear;
+    merged.dashboardMonth = local.dashboardMonth || merged.dashboardMonth;
+    merged.budgetYear = local.budgetYear || merged.budgetYear;
+    merged.budgetMonth = local.budgetMonth || merged.budgetMonth;
+    merged.budgets = Object.assign({}, remote.budgets, local.budgets);
+    merged.emergencyFund = Object.assign({}, remote.emergencyFund, local.emergencyFund);
+    merged.categories = {
+      income: Array.from(new Set([...(remote.categories?.income||[]), ...(local.categories?.income||[])])),
+      expense: Array.from(new Set([...(remote.categories?.expense||[]), ...(local.categories?.expense||[])]))
+    };
+  }
+
+  // Smart Array Union: preserves offline additions and respects deletions via tombstones
+  const mergeArrayById = (localArr = [], remoteArr = []) => {
+    const map = new Map();
+    remoteArr.forEach(item => {
+      if (item && item.id && !allDeleted.has(item.id)) map.set(item.id, item);
+    });
+    localArr.forEach(item => {
+      if (!item || !item.id || allDeleted.has(item.id)) return;
+      const existing = map.get(item.id);
+      if (!existing) {
+        map.set(item.id, item); // Keep newly created offline entry!
+      } else {
+        const localTime = item.updatedAt || local.lastModified || 0;
+        const remoteTime = existing.updatedAt || remote.lastModified || 0;
+        if (localTime >= remoteTime) {
+          map.set(item.id, item); // Keep whichever modification is newer
+        }
+      }
+    });
+    return Array.from(map.values());
+  };
+
+  merged.transactions = mergeArrayById(local.transactions, remote.transactions);
+  merged.savingsGoals = mergeArrayById(local.savingsGoals, remote.savingsGoals);
+  merged.debts = mergeArrayById(local.debts, remote.debts);
+  merged.netWorth = mergeArrayById(local.netWorth, remote.netWorth);
+  merged.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0, Date.now());
+
+  return merged;
+}
+
 function subscribeToDoc(){
   if (unsubscribeSnapshot) unsubscribeSnapshot();
   unsubscribeSnapshot = docRef(syncCode).onSnapshot(snap => {
     if (!snap.exists) return;
-    const data = snap.data();
-    const json = JSON.stringify(data);
+    const remoteData = snap.data();
+    const json = JSON.stringify(remoteData);
     if (json === lastPushedJSON) return;
-    state = Object.assign(defaultState(), data);
+
+    if (!isDirty) {
+      // No local edits made since opening — safe to accept remote cloud state
+      state = Object.assign(defaultState(), remoteData);
+    } else {
+      // Local offline edits exist — run intelligent merge and sync both ways!
+      state = reconcileState(state, remoteData);
+      commitSave(false, true);
+    }
+    
     migrateEmergencyFund();
     render();
     saveStatus = navigator.onLine ? "saved" : "offline";
@@ -1591,6 +1665,7 @@ function disconnectSync(){
   localStorage.removeItem(SYNC_CODE_KEY);
   syncCode = null;
   state = defaultState();
+  isDirty = false;
   render();
   renderConnectOverlay();
   document.getElementById("connect-overlay").classList.add("show");
@@ -1698,6 +1773,7 @@ function loadState(){
     }
   } catch(e) {}
 
+  isDirty = false; // Fresh boot is clean by default
   render();
   saveStatus = navigator.onLine ? "saved" : "offline";
   updateSaveIndicator();
@@ -1717,11 +1793,13 @@ function loadState(){
 
 let saveTimer = null;
 function saveState(){
+  state.lastModified = Date.now();
+  isDirty = true; // Mark as actively edited on this device!
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { commitSave(false); }, 400);
+  saveTimer = setTimeout(() => { commitSave(false, true); }, 400);
 }
 
-function commitSave(showToast){
+function commitSave(showToast, force = false){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ }
   
   if (!navigator.onLine) {
@@ -1738,10 +1816,16 @@ function commitSave(showToast){
     return;
   }
 
+  // CRITICAL GUARD: Prevent idle devices from pushing stale memory when waking up!
+  if (!isDirty && !force) return;
+
   const json = JSON.stringify(state);
+  if (json === lastPushedJSON) return;
   lastPushedJSON = json;
+
   docRef(syncCode).set(state)
     .then(()=>{
+      isDirty = false; // Successfully synced to cloud!
       saveStatus = "saved";
       updateSaveIndicator();
       if (showToast) showToast_(false, "✓ Synced");
@@ -1755,8 +1839,10 @@ function commitSave(showToast){
 }
 
 function manualSave(){
+  state.lastModified = Date.now();
+  isDirty = true;
   clearTimeout(saveTimer);
-  commitSave(true);
+  commitSave(true, true);
 }
 
 function showToast_(isError, message, isOfflineWarning = false){
@@ -1798,7 +1884,8 @@ function restoreData(fileInput){
       const parsed = JSON.parse(e.target.result);
       state = Object.assign(defaultState(), parsed);
       migrateEmergencyFund();
-      commitSave(true);
+      isDirty = true;
+      commitSave(true, true);
       render();
       triggerHaptic('medium');
     }catch(err){
@@ -2222,7 +2309,7 @@ function addTransaction(){
   const type = document.getElementById("tx-type").value;
   const amount = parseFloat(document.getElementById("tx-amt").value) || 0;
   const account = document.getElementById("tx-acct").value;
-  state.transactions.push({id:uid(), date, description, category, type, amount, account});
+  state.transactions.push({id:uid(), date, description, category, type, amount, account, updatedAt: Date.now()});
   saveState(); render();
 }
 function deleteTransaction(id){
@@ -2230,6 +2317,9 @@ function deleteTransaction(id){
     "Delete Transaction",
     "Are you sure you want to delete this transaction?",
     () => {
+      if (!state.deletedIds) state.deletedIds = [];
+      state.deletedIds.push(id);
+      if (state.deletedIds.length > 200) state.deletedIds = state.deletedIds.slice(-200);
       state.transactions = state.transactions.filter(t=>t.id!==id);
       saveState(); render();
     }
@@ -2428,14 +2518,18 @@ function renderSavings(){
 function updateSaving(id, field, val){
   const g = state.savingsGoals.find(x=>x.id===id); if(!g) return;
   g[field] = field==="name" ? val : (parseFloat(val)||0);
+  g.updatedAt = Date.now();
   saveState(); render();
 }
 function addSaving(){
-  state.savingsGoals.push({id:uid(), name:"New Goal", goal:0, starting:0, monthly:0, saved:0});
+  state.savingsGoals.push({id:uid(), name:"New Goal", goal:0, starting:0, monthly:0, saved:0, updatedAt: Date.now()});
   saveState(); render();
 }
 function deleteSaving(id){
   showConfirmAlert("Delete Goal", "Are you sure you want to delete this savings goal?", () => {
+    if (!state.deletedIds) state.deletedIds = [];
+    state.deletedIds.push(id);
+    if (state.deletedIds.length > 200) state.deletedIds = state.deletedIds.slice(-200);
     state.savingsGoals = state.savingsGoals.filter(g=>g.id!==id); 
     saveState(); render();
   }); 
@@ -2506,14 +2600,18 @@ function renderDebt(){
 function updateDebt(id, field, val){
   const d = state.debts.find(x=>x.id===id); if(!d) return;
   d[field] = (field==="name"||field==="type") ? val : (parseFloat(val)||0);
+  d.updatedAt = Date.now();
   saveState(); render();
 }
 function addDebt(){
-  state.debts.push({id:uid(), name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0});
+  state.debts.push({id:uid(), name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0, updatedAt: Date.now()});
   saveState(); render();
 }
 function deleteDebt(id){
   showConfirmAlert("Delete Debt", "Are you sure you want to delete this debt entry?", () => {
+    if (!state.deletedIds) state.deletedIds = [];
+    state.deletedIds.push(id);
+    if (state.deletedIds.length > 200) state.deletedIds = state.deletedIds.slice(-200);
     state.debts = state.debts.filter(d=>d.id!==id); 
     saveState(); render();
   });
@@ -2584,14 +2682,18 @@ function renderNetWorth(){
 function updateNW(id, field, val){
   const e = state.netWorth.find(x=>x.id===id); if(!e) return;
   e[field] = field==="month" ? val : (parseFloat(val)||0);
+  e.updatedAt = Date.now();
   saveState(); render();
 }
 function addNW(){
-  state.netWorth.push({id:uid(), month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0});
+  state.netWorth.push({id:uid(), month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0, updatedAt: Date.now()});
   saveState(); render();
 }
 function deleteNW(id){
   showConfirmAlert("Delete Entry", "Are you sure you want to delete this net worth record?", () => {
+    if (!state.deletedIds) state.deletedIds = [];
+    state.deletedIds.push(id);
+    if (state.deletedIds.length > 200) state.deletedIds = state.deletedIds.slice(-200);
     state.netWorth = state.netWorth.filter(e=>e.id!==id); 
     saveState(); render();
   });
@@ -2649,7 +2751,7 @@ function removeCategory(kind, name){
 }
 
 /* ============================= INIT & SCROLL MINIMIZATION ============================= */
-window.addEventListener("beforeunload", () => { clearTimeout(saveTimer); commitSave(false); });
+window.addEventListener("beforeunload", () => { clearTimeout(saveTimer); commitSave(false, false); });
 window.addEventListener("resize", () => {
   const mobileNav = document.getElementById("mobile-nav");
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
@@ -2692,7 +2794,7 @@ window.addEventListener("scroll", (e) => {
         }
       } else if (diff < -6 && !isAtBottom) {
         scrollDelta = 0;
-        // Only maximize the tab bar on upward scroll!
+        // Only maximize the bottom tab bar on upward scroll!
         if (isTabMinimized) {
           isTabMinimized = false;
           const nav = document.getElementById("mobile-nav");
@@ -2706,7 +2808,7 @@ window.addEventListener("scroll", (e) => {
       lastScrollY = currentScrollY;
     }
 
-    // Only maximize the header when reaching the very top of the page (<= 15px)
+    // Only maximize the header when reaching the absolute top of the page (<= 15px)
     if (currentScrollY <= 15 && (isHeaderMinimized || isTabMinimized)) {
       if (isHeaderMinimized) {
         isHeaderMinimized = false;
