@@ -1229,6 +1229,7 @@ function defaultState(){
     deletedIds: [],
     currency: "₱",
     activeTab: "dashboard",
+    showCCBreakdown: false,
     dashboardYear: 2026,
     dashboardMonth: new Date().getMonth()+1,
     budgetMonth: 1,
@@ -1371,8 +1372,10 @@ async function connectExisting(){
     
     // Protect local UI tab view so setup doesn't yank you away!
     const currentTab = state.activeTab || "dashboard";
+    const currentShowCC = state.showCCBreakdown || false;
     state = Object.assign(defaultState(), snap.data());
     state.activeTab = currentTab;
+    state.showCCBreakdown = currentShowCC;
     
     isDirty = false;
     migrateEmergencyFund();
@@ -1465,6 +1468,7 @@ function subscribeToDoc(){
     const preparePayload = (baseData) => {
       const payload = Object.assign({}, baseData);
       delete payload.activeTab;
+      delete payload.showCCBreakdown;
       delete payload.dashboardYear;
       delete payload.dashboardMonth;
       delete payload.budgetYear;
@@ -1478,6 +1482,7 @@ function subscribeToDoc(){
     // Snapshot this device's current UI navigation tab and date filters!
     const uiPreserved = {
       activeTab: state.activeTab,
+      showCCBreakdown: state.showCCBreakdown,
       dashboardYear: state.dashboardYear,
       dashboardMonth: state.dashboardMonth,
       budgetYear: state.budgetYear,
@@ -1870,6 +1875,7 @@ function commitSave(showToast, force = false){
   const preparePayload = (baseData) => {
     const payload = Object.assign({}, baseData);
     delete payload.activeTab;
+    delete payload.showCCBreakdown;
     delete payload.dashboardYear;
     delete payload.dashboardMonth;
     delete payload.budgetYear;
@@ -1893,6 +1899,7 @@ function commitSave(showToast, force = false){
   .then((finalMerged) => {
     const uiPreserved = {
       activeTab: state.activeTab,
+      showCCBreakdown: state.showCCBreakdown,
       dashboardYear: state.dashboardYear,
       dashboardMonth: state.dashboardMonth,
       budgetYear: state.budgetYear,
@@ -2577,13 +2584,32 @@ function renderBudget(){
     </tr>`;
   }).join("");
 
-  const netB = totalBudgetInc-totalBudgetExp, netA = totalActualInc-totalActualExp;
+  // Reconcile Credit Card Swipes (Deferred Cash) vs CC Payments (Actual Cash Out)
+  const ccExpThisMonth = state.transactions.reduce((sum, t) => {
+    const d = new Date(t.date + "T00:00:00");
+    if (t.type === "Expense" && t.creditCardId && t.creditCardId !== "" && d.getMonth() + 1 === month && d.getFullYear() === year) {
+      return sum + Number(t.amount || 0);
+    }
+    return sum;
+  }, 0);
+
+  const ccPaidThisMonth = state.transactions.reduce((sum, t) => {
+    const d = new Date(t.date + "T00:00:00");
+    if (t.type === "CC Payment" && d.getMonth() + 1 === month && d.getFullYear() === year) {
+      return sum + Number(t.amount || 0);
+    }
+    return sum;
+  }, 0);
+
+  const actualCashOutflow = totalActualExp - ccExpThisMonth + ccPaidThisMonth;
+  const netB = totalBudgetInc - totalBudgetExp;
+  const netA = totalActualInc - actualCashOutflow;
 
   return `
   <div class="page-header">
     <div>
       <div class="page-title">Monthly Budget<span class="rule"></span></div>
-      <div class="page-desc">Set a budget per category and compare it to what actually happened that month.</div>
+      <div class="page-desc">Set a budget per category and compare it to what actually happened that month. Your credit card swipes are deferred from your cash flow until you actually pay your credit card bill!</div>
     </div>
     <div class="controls">
       <label style="font-size:12px;color:var(--muted);">Month</label>
@@ -2606,8 +2632,22 @@ function renderBudget(){
       <thead><tr><th></th><th>Budgeted</th><th>Actual</th></tr></thead>
       <tbody>
         <tr><td class="text">Total Income</td><td>${fmt(totalBudgetInc)}</td><td>${fmt(totalActualInc)}</td></tr>
-        <tr><td class="text">Total Expenses</td><td>${fmt(totalBudgetExp)}</td><td>${fmt(totalActualExp)}</td></tr>
-        <tr><td class="text">Net (Income − Expenses)</td><td>${fmt(netB)}</td><td>${fmt(netA)}</td></tr>
+        <tr>
+          <td class="text">
+            Total Category Spending
+            <button class="btn secondary" style="padding:2px 8px; min-height:24px; min-width:auto; font-size:11px; margin-left:8px; vertical-align:middle; font-weight:600;" onclick="state.showCCBreakdown = !state.showCCBreakdown; saveUIState(); render(); triggerHaptic('light');">
+              ${state.showCCBreakdown ? '▾ Hide CC Flow' : '▸ Show CC Flow'}
+            </button>
+          </td>
+          <td>${fmt(totalBudgetExp)}</td>
+          <td>${fmt(totalActualExp)}</td>
+        </tr>
+        ${state.showCCBreakdown ? `
+        <tr style="color:var(--muted);"><td class="text" style="padding-left:20px; font-weight:500; font-size:11.5px;">↳ Less: CC Swipes (Deferred Cash)</td><td style="font-weight:500; font-size:11.5px;">—</td><td class="amt-pos" style="font-weight:600; font-size:11.5px;">-${fmt(ccExpThisMonth)}</td></tr>
+        <tr style="color:var(--muted);"><td class="text" style="padding-left:20px; font-weight:500; font-size:11.5px;">↳ Plus: CC Bills Paid (Cash Out)</td><td style="font-weight:500; font-size:11.5px;">—</td><td class="amt-neg" style="font-weight:600; font-size:11.5px;">+${fmt(ccPaidThisMonth)}</td></tr>
+        ` : ''}
+        <tr style="border-top:1px solid var(--line);"><td class="text">Actual Cash Expenses</td><td>${fmt(totalBudgetExp)}</td><td class="amt-neg">${fmt(actualCashOutflow)}</td></tr>
+        <tr><td class="text">Net Cash Flow (Income − Cash Outflow)</td><td>${fmt(netB)}</td><td class="${netA<0?'amt-neg':'amt-pos'}">${fmt(netA)}</td></tr>
       </tbody>
     </table>
   </div>
