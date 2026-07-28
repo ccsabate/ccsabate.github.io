@@ -475,6 +475,20 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 }
 .btn.danger:hover { background: var(--brick-soft); }
 
+/* Minimalist Circular Table Action Buttons */
+.btn-action {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+}
+
 /* ---------- KPI Cards ---------- */
 .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; min-width: 0; width: 100%; }
 .kpi-card {
@@ -1222,6 +1236,8 @@ const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct",
 
 let isDirty = false; // Prevents idle wakeup events from accidentally pushing stale memory
 let editingTxId = null; // Tracks inline editing state on the Transactions tab
+let activeEditId = null; // Tracks inline editing across other tabs (Savings, Accounts, Debts, NetWorth)
+let editingSection = null; // Tracks section editing (EmergencyFund, Categories)
 
 function defaultState(){
   return {
@@ -1240,8 +1256,8 @@ function defaultState(){
       expense: ["Housing / Rent","Utilities","Groceries","Transportation","Insurance","Debt Payments","Dining Out","Entertainment","Subscriptions","Personal Care","Shopping","Health & Medical","Education","Miscellaneous"]
     },
     transactions: [
-      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", updatedAt: Date.now()},
-      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", updatedAt: Date.now()}
+      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()},
+      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()}
     ],
     budgets: {"Groceries":400,"Housing / Rent":1200,"Utilities":150,"Salary":3200},
     emergencyFund: {
@@ -2006,7 +2022,7 @@ function pct(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFraction
 function txSum(category, type, month, year){
   return state.transactions.reduce((sum,t)=>{
     const d = new Date(t.date+"T00:00:00");
-    if (t.category===category && t.type===type && d.getMonth()+1===month && d.getFullYear()===year){
+    if (t.category===category && (t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getMonth()+1===month && d.getFullYear()===year){
       return sum + Number(t.amount||0);
     }
     return sum;
@@ -2015,21 +2031,21 @@ function txSum(category, type, month, year){
 function ytdSum(type, year){
   return state.transactions.reduce((sum,t)=>{
     const d = new Date(t.date+"T00:00:00");
-    if (t.type===type && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    if ((t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getFullYear()===year){ return sum + Number(t.amount||0); }
     return sum;
   },0);
 }
 function monthSum(type, month, year){
   return state.transactions.reduce((sum,t)=>{
     const d = new Date(t.date+"T00:00:00");
-    if (t.type===type && d.getMonth()+1===month && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    if ((t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getMonth()+1===month && d.getFullYear()===year){ return sum + Number(t.amount||0); }
     return sum;
   },0);
 }
 function categoryYearSum(category, type, year){
   return state.transactions.reduce((sum,t)=>{
     const d = new Date(t.date+"T00:00:00");
-    if (t.category===category && t.type===type && d.getFullYear()===year){ return sum + Number(t.amount||0); }
+    if (t.category===category && (t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getFullYear()===year){ return sum + Number(t.amount||0); }
     return sum;
   },0);
 }
@@ -2055,6 +2071,14 @@ const ICONS = {
   categories: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5h5a1.2 1.2 0 0 1 1.2 1.2v5L8.7 17.2a1.2 1.2 0 0 1-1.7 0L2.8 13a1.2 1.2 0 0 1 0-1.7z"/><circle cx="13.3" cy="6.2" r="1.1" fill="currentColor" stroke="none"/></svg>',
   emergency: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 3 6v5c0 5 7 6.5 7 6.5s7-1.5 7-6.5V6l-7-3.5z"/><line x1="10" y1="7.5" x2="10" y2="11"/><circle cx="10" cy="13.5" r="0.9" fill="currentColor" stroke="none"/></svg>',
   sinking: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5.5" rx="7" ry="2.5"/><path d="M3 5.5v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4"/><path d="M3 9.5v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4"/></svg>',
+  bank: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;flex-shrink:0;"><path d="M3 8l7-5 7 5v2H3V8z"/><path d="M5 10v6"/><path d="M9 10v6"/><path d="M11 10v6"/><path d="M15 10v6"/><path d="M2 16h16v2H2v-2z"/></svg>',
+  card: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;flex-shrink:0;"><rect x="2" y="4.5" width="16" height="11" rx="1.5"/><line x1="2" y1="8" x2="18" y2="8"/><line x1="5" y1="12" x2="8" y2="12"/></svg>',
+  cash: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;flex-shrink:0;"><rect x="2" y="5" width="16" height="10" rx="2"/><circle cx="10" cy="10" r="2.5"/><path d="M5 8v.01"/><path d="M15 12v.01"/></svg>',
+  loan: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;flex-shrink:0;"><path d="M6 2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="8" y1="6" x2="12" y2="6"/><line x1="8" y1="10" x2="12" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/></svg>',
+  edit: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><path d="M11.5 4.5l4 4L5 19H1v-4L11.5 4.5z"/><path d="M14 2l4 4"/></svg>',
+  delete: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><path d="M3 5h14"/><path d="M8 5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/><path d="M5 5v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5"/><line x1="8" y1="9" x2="8" y2="15"/><line x1="12" y1="9" x2="12" y2="15"/></svg>',
+  check: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><polyline points="4 10 8 14 16 6"/></svg>',
+  close: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>'
 };
 const tabs = [
   {id:"dashboard", label:"Dashboard", icon:ICONS.dashboard},
@@ -2149,6 +2173,8 @@ function updateTabIndicator(bar, targetId, animate = true){
 function switchTab(id){ 
   if (state.activeTab !== id) triggerHaptic('light');
   editingTxId = null; // Reset edit state when switching tabs
+  activeEditId = null; // Reset inline editing state
+  editingSection = null; // Reset section editing state
   state.activeTab = id; 
   saveUIState(); // Save locally without touching cloud!
   window.scrollTo(0,0); 
@@ -2345,26 +2371,35 @@ function renderTransactions(){
   const body = rows.length ? rows.map(t => {
     let methodBadge = "";
     if (t.type === "CC Payment") {
-      methodBadge = `<span style="color:var(--gold);font-weight:600;">💳 Paid CC from ${t.accountName || 'Bank'}</span>`;
+      methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.card} Paid CC from ${t.accountName || 'Bank'}</span>`;
+    } else if (t.type === "Debt Payment") {
+      methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.loan} Paid Debt from ${t.accountName || 'Bank'}</span>`;
     } else if (t.paymentType === "Credit" || t.creditCardName) {
-      methodBadge = `💳 ${t.creditCardName || t.accountName || 'Credit Card'}`;
+      methodBadge = `<span style="display:inline-flex;align-items:center;">${ICONS.card} ${t.creditCardName || t.accountName || 'Credit Card'}</span>`;
     } else if (t.paymentType === "Cash") {
-      methodBadge = `💵 ${t.accountName || 'Cash'}`;
+      methodBadge = `<span style="display:inline-flex;align-items:center;">${ICONS.cash} ${t.accountName || 'Cash'}</span>`;
     } else {
-      methodBadge = `🏦 ${t.accountName || t.account || 'Bank / Debit'}`;
+      methodBadge = `<span style="display:inline-flex;align-items:center;">${ICONS.bank} ${t.accountName || t.account || 'Bank / Debit'}</span>`;
+    }
+
+    let targetBadge = "";
+    if (t.creditCardName && t.type !== "Debt Payment") {
+      targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.card} ${t.creditCardName}</div>`;
+    } else if (t.debtName) {
+      targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.loan} ${t.debtName}</div>`;
     }
 
     return `
     <tr>
       <td class="text">${t.date}</td>
-      <td class="text">${t.description}</td>
-      <td class="text"><span style="${t.type==='CC Payment'?'color:var(--gold);font-weight:600;':''}">${t.type}</span></td>
+      <td class="text">${t.description}${targetBadge}</td>
+      <td class="text"><span style="${(t.type==='CC Payment' || t.type==='Debt Payment')?'color:var(--gold);font-weight:600;':''}">${t.type}</span></td>
       <td class="text">${t.category}</td>
       <td class="text" style="font-size:12px;">${methodBadge}</td>
       <td class="${t.type==='Income'?'amt-pos':(t.type==='CC Payment'?'amt-pos':'amt-neg')}">${t.type==='Income'?'+':(t.type==='CC Payment'?'✓ ':'-')}${fmt(t.amount)}</td>
       <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary" style="padding:6px 10px;min-height:36px;min-width:36px;margin-right:4px;" onclick="editTransaction('${t.id}')" title="Edit">✎</button>
-        <button class="btn danger" style="padding:6px 10px;min-height:36px;min-width:36px;" onclick="deleteTransaction('${t.id}')" title="Delete">✕</button>
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="editTransaction('${t.id}')" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteTransaction('${t.id}')" title="Delete">${ICONS.delete}</button>
       </td>
     </tr>`;
   }).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
@@ -2373,7 +2408,7 @@ function renderTransactions(){
   <div class="page-header">
     <div>
       <div class="page-title">Transactions<span class="rule"></span></div>
-      <div class="page-desc">Your yearly transaction log. Choose between Credit, Debit, or Cash methods—your balances automatically update!</div>
+      <div class="page-desc">Your yearly transaction log. Choose between Credit, Debit, Cash, or Debt Payment methods—your balances automatically update!</div>
     </div>
   </div>
   <div class="section">
@@ -2389,6 +2424,7 @@ function renderTransactions(){
         <option value="Expense">Expense</option>
         <option value="Income">Income</option>
         <option value="CC Payment">CC Payment</option>
+        <option value="Debt Payment">Debt Payment</option>
       </select>
       <select id="tx-cat" class="cat">${catOptions}</select>
       
@@ -2422,20 +2458,24 @@ function syncTxCategory(){
   const catEl = document.getElementById("tx-cat");
   if (type === "CC Payment") {
     catEl.innerHTML = `<option value="Credit Card Payment">Credit Card Payment</option>`;
+  } else if (type === "Debt Payment") {
+    const list = state.categories.expense;
+    const debtCat = list.find(c => c.toLowerCase().includes("debt")) || "Debt Payments";
+    catEl.innerHTML = list.map(c=>`<option value="${c}" ${c===debtCat?'selected':''}>${c}</option>`).join("");
   } else {
     const list = type==="Income" ? state.categories.income : state.categories.expense;
     catEl.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
   }
 }
 
-function syncTxAccounts(selectedType = "Debit", selectedAcctId = "") {
+function syncTxAccounts(selectedType = "Debit", selectedAcctId = "", selectedTargetId = "") {
   const container = document.getElementById("tx-acct-container");
   if (!container) return;
   const txType = document.getElementById("tx-type") ? document.getElementById("tx-type").value : "Expense";
 
   if (txType === "CC Payment") {
-    const fromAccts = (state.accounts || []).map(a => `<option value="${a.id}" ${a.id === selectedAcctId ? 'selected' : ''}>${a.type === 'Cash' ? '💵' : '🏦'} ${a.name}</option>`).join("");
-    const toCards = (state.creditCards || []).map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+    const fromAccts = (state.accounts || []).map(a => `<option value="${a.id}" ${a.id === selectedAcctId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    const toCards = (state.creditCards || []).map(c => `<option value="${c.id}" ${c.id === selectedTargetId ? 'selected' : ''}>${c.name}</option>`).join("");
     container.innerHTML = `
       <select id="tx-from-acct" class="cat" style="width:150px;">
         <option value="">-- Pay From --</option>
@@ -2446,12 +2486,25 @@ function syncTxAccounts(selectedType = "Debit", selectedAcctId = "") {
         ${toCards}
       </select>
     `;
+  } else if (txType === "Debt Payment") {
+    const fromAccts = (state.accounts || []).map(a => `<option value="${a.id}" ${a.id === selectedAcctId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    const toDebts = (state.debts || []).map(d => `<option value="${d.id}" ${d.id === selectedTargetId ? 'selected' : ''}>${d.name} (${fmt(d.current)})</option>`).join("");
+    container.innerHTML = `
+      <select id="tx-from-acct" class="cat" style="width:150px;">
+        <option value="">-- Pay From --</option>
+        ${fromAccts}
+      </select>
+      <select id="tx-to-debt" class="cat" style="width:170px;">
+        <option value="">-- Select Debt --</option>
+        ${toDebts}
+      </select>
+    `;
   } else {
     container.innerHTML = `
-      <select id="tx-acct-type" class="short" style="width:105px;" onchange="populateAcctSelect()">
-        <option value="Debit" ${selectedType === 'Debit' ? 'selected' : ''}>🏦 Debit</option>
-        <option value="Credit" ${selectedType === 'Credit' ? 'selected' : ''}>💳 Credit</option>
-        <option value="Cash" ${selectedType === 'Cash' ? 'selected' : ''}>💵 Cash</option>
+      <select id="tx-acct-type" class="short" style="width:130px;" onchange="populateAcctSelect()">
+        <option value="Debit" ${selectedType === 'Debit' ? 'selected' : ''}>Debit / Checking</option>
+        <option value="Credit" ${selectedType === 'Credit' ? 'selected' : ''}>Credit Card</option>
+        <option value="Cash" ${selectedType === 'Cash' ? 'selected' : ''}>Cash Wallet</option>
       </select>
       <select id="tx-acct-id" class="cat" style="width:150px;"></select>
     `;
@@ -2493,11 +2546,15 @@ function editTransaction(id) {
   
   let pType = tx.paymentType || (tx.creditCardId ? "Credit" : "Debit");
   let aId = tx.accountId || tx.creditCardId || "";
-  syncTxAccounts(pType, aId);
+  let targetId = tx.creditCardId || tx.debtId || "";
+  syncTxAccounts(pType, aId, targetId);
   
   if (tx.type === "CC Payment") {
     if (document.getElementById("tx-from-acct")) document.getElementById("tx-from-acct").value = tx.accountId || "";
     if (document.getElementById("tx-to-cc")) document.getElementById("tx-to-cc").value = tx.creditCardId || "";
+  } else if (tx.type === "Debt Payment") {
+    if (document.getElementById("tx-from-acct")) document.getElementById("tx-from-acct").value = tx.accountId || "";
+    if (document.getElementById("tx-to-debt")) document.getElementById("tx-to-debt").value = tx.debtId || "";
   }
   
   document.getElementById("tx-amt").value = tx.amount || "";
@@ -2546,6 +2603,20 @@ function applyTxBalance(tx, sign = 1) {
     }
     return;
   }
+  
+  if (tx.type === "Debt Payment") {
+    // 1. Pay down Loan / Term Debt
+    if (tx.debtId && state.debts) {
+      const debt = state.debts.find(d => d.id === tx.debtId);
+      if (debt) { debt.current = Math.max(0, (Number(debt.current) || 0) - amt); debt.updatedAt = Date.now(); }
+    }
+    // 2. Deduct from Debit/Cash Bank Account
+    if (tx.accountId && state.accounts) {
+      const acct = state.accounts.find(a => a.id === tx.accountId);
+      if (acct) { acct.balance = (Number(acct.balance) || 0) - amt; acct.updatedAt = Date.now(); }
+    }
+    return;
+  }
 
   if (tx.paymentType === "Credit" || tx.creditCardId) {
     const targetId = tx.accountId || tx.creditCardId;
@@ -2583,6 +2654,8 @@ function addTransaction(){
   let accountName = "";
   let creditCardId = "";
   let creditCardName = "";
+  let debtId = "";
+  let debtName = "";
 
   if (type === "CC Payment") {
     paymentType = "Debit";
@@ -2596,6 +2669,19 @@ function addTransaction(){
     if (creditCardId && state.creditCards) {
       const c = state.creditCards.find(x => x.id === creditCardId);
       if (c) creditCardName = c.name;
+    }
+  } else if (type === "Debt Payment") {
+    paymentType = "Debit";
+    accountId = document.getElementById("tx-from-acct") ? document.getElementById("tx-from-acct").value : "";
+    debtId = document.getElementById("tx-to-debt") ? document.getElementById("tx-to-debt").value : "";
+    
+    if (accountId && state.accounts) {
+      const a = state.accounts.find(x => x.id === accountId);
+      if (a) { accountName = a.name; paymentType = a.type; }
+    }
+    if (debtId && state.debts) {
+      const d = state.debts.find(x => x.id === debtId);
+      if (d) debtName = d.name;
     }
   } else {
     paymentType = document.getElementById("tx-acct-type") ? document.getElementById("tx-acct-type").value : "Debit";
@@ -2621,12 +2707,14 @@ function addTransaction(){
       applyTxBalance(tx, -1); // Reverse old effect
       tx.date = date; tx.description = description; tx.type = type; tx.category = category; tx.amount = amount;
       tx.paymentType = paymentType; tx.accountId = accountId; tx.accountName = accountName;
-      tx.creditCardId = creditCardId; tx.creditCardName = creditCardName; tx.updatedAt = Date.now();
+      tx.creditCardId = creditCardId; tx.creditCardName = creditCardName;
+      tx.debtId = debtId; tx.debtName = debtName;
+      tx.updatedAt = Date.now();
       applyTxBalance(tx, 1); // Apply new effect
     }
     editingTxId = null;
   } else {
-    const newTx = {id:uid(), date, description, category, type, amount, paymentType, accountId, accountName, creditCardId, creditCardName, updatedAt: Date.now()};
+    const newTx = {id:uid(), date, description, category, type, amount, paymentType, accountId, accountName, creditCardId, creditCardName, debtId, debtName, updatedAt: Date.now()};
     applyTxBalance(newTx, 1);
     state.transactions.push(newTx);
   }
@@ -2756,7 +2844,7 @@ function renderBudget(){
         ${state.showAccountBreakdown ? `
         <tr style="background:var(--card); font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted);"><td colspan="3" style="padding:8px 12px; font-weight:700;">Remaining Money Left in Accounts (Live Balances)</td></tr>
         ` + (state.accounts || []).map(a => `
-        <tr style="color:var(--ink);"><td class="text" style="padding-left:20px; font-weight:500; font-size:12px;">↳ ${a.type === 'Cash' ? '💵' : '🏦'} ${a.name} (${a.type})</td><td style="font-weight:500; font-size:12px;">—</td><td class="${+a.balance >= 0 ? 'amt-pos' : 'amt-neg'}" style="font-weight:600; font-size:12px;">${fmt(a.balance)}</td></tr>
+        <tr style="color:var(--ink);"><td class="text" style="padding-left:20px; font-weight:500; font-size:12px;">↳ <span style="display:inline-flex;align-items:center;">${a.type === 'Cash' ? ICONS.cash : ICONS.bank} ${a.name} (${a.type})</span></td><td style="font-weight:500; font-size:12px;">—</td><td class="${+a.balance >= 0 ? 'amt-pos' : 'amt-neg'}" style="font-weight:600; font-size:12px;">${fmt(a.balance)}</td></tr>
         `).join("") + `
         <tr style="border-top:1px dashed var(--line); color:var(--ink);"><td class="text" style="padding-left:20px; font-weight:700; font-size:12px;">Total Available Cash & Debit</td><td>—</td><td class="amt-pos" style="font-weight:700; font-size:12.5px;">${fmt((state.accounts || []).reduce((s,a)=>s+(+a.balance||0),0))}</td></tr>
         ` : ''}
@@ -2790,6 +2878,8 @@ function renderSavings(){
   const totalLeft = totalGoal - totalSaved;
   const totalMonthly = goals.reduce((s,g)=>s+(+g.monthly||0), (+ef.monthly||0));
 
+  const isEfEditing = (editingSection === 'ef');
+
   const rows = goals.map(g=>{
     const left = (+g.goal||0)-(+g.saved||0);
     const progress = g.goal ? Math.min(100,(g.saved/g.goal*100)) : 0;
@@ -2801,13 +2891,33 @@ function renderSavings(){
     } else if (left <= 0 || months === 0) {
       estDate = "Goal Reached!";
     }
+
+    if (activeEditId === g.id) {
+      return `
+      <tr style="background:var(--card-hover);">
+        <td class="text"><input type="text" id="edit-g-name" value="${g.name}"></td>
+        <td><input type="number" id="edit-g-goal" value="${g.goal}"></td>
+        <td><input type="number" id="edit-g-starting" value="${g.starting}"></td>
+        <td><input type="number" id="edit-g-monthly" value="${g.monthly}"></td>
+        <td><input type="number" id="edit-g-saved" value="${g.saved}"></td>
+        <td class="${left>0?'amt-neg':'amt-pos'}">${fmt(left)}</td>
+        <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-pct">${pct(progress)}</div></div></td>
+        <td>${months}</td>
+        <td class="text">${estDate}</td>
+        <td style="white-space:nowrap; text-align:right;">
+          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveSaving('${g.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+        </td>
+      </tr>`;
+    }
+
     return `
     <tr>
-      <td class="text"><input type="text" value="${g.name}" onchange="updateSaving('${g.id}','name',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${g.goal}" onchange="updateSaving('${g.id}','goal',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${g.starting}" onchange="updateSaving('${g.id}','starting',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${g.monthly}" onchange="updateSaving('${g.id}','monthly',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${g.saved}" onchange="updateSaving('${g.id}','saved',this.value); triggerHaptic('light');"></td>
+      <td class="text" style="font-weight:600;">${g.name}</td>
+      <td>${fmt(g.goal)}</td>
+      <td>${fmt(g.starting)}</td>
+      <td>${fmt(g.monthly)} / mo</td>
+      <td class="amt-pos" style="font-weight:600;">${fmt(g.saved)}</td>
       <td class="${left>0?'amt-neg':'amt-pos'}">${fmt(left)}</td>
       <td>
         <div class="progress-wrap">
@@ -2817,14 +2927,17 @@ function renderSavings(){
       </td>
       <td>${months}</td>
       <td class="text">${estDate}</td>
-      <td><button class="btn danger" onclick="deleteSaving('${g.id}')">✕</button></td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${g.id}'; editingSection=null; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteSaving('${g.id}')" title="Delete">${ICONS.delete}</button>
+      </td>
     </tr>`;
   }).join("");
 
   return `
   <div class="page-header">
     <div><div class="page-title">Savings Tracker<span class="rule"></span></div>
-    <div class="page-desc">Build your emergency safety net and track progress toward your sinking fund goals.</div></div>
+    <div class="page-desc">Build your emergency safety net and track progress toward your sinking fund goals. Tap ✎ to safely edit entries!</div></div>
   </div>
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-label">Total Master Target</div><div class="kpi-value">${fmt(totalGoal)}</div></div>
@@ -2845,19 +2958,21 @@ function renderSavings(){
       </div>
     </div>
     <div class="kpi-sub" style="margin: 8px 0 18px 0;">Aim for 3–12 months of living expenses as your primary safety net.</div>
+    
     <div class="table-wrap">
     <table>
-      <thead><tr><th>Target Duration</th><th>Target Goal</th><th>Monthly Contribution</th><th>Saved So Far</th><th>Left to Save</th><th>Progress</th><th>Est. Months</th><th>Est. Date</th></tr></thead>
+      <thead><tr><th>Target Duration</th><th>Target Goal</th><th>Monthly Contribution</th><th>Saved So Far</th><th>Left to Save</th><th>Progress</th><th>Est. Months</th><th>Est. Date</th><th></th></tr></thead>
       <tbody>
-        <tr>
+        <tr style="${isEfEditing?'background:var(--card-hover);':''}">
           <td>
-            <select style="min-width:115px; font-weight:600;" onchange="updateEmergencyFund('monthsTarget', this.value); triggerHaptic('light');">
+            ${isEfEditing ? `
+            <select id="edit-ef-target" style="min-width:115px; font-weight:600;">
               ${[3,4,5,6,7,8,9,10,11,12].map(m=>`<option value="${m}" ${ef.monthsTarget===m?'selected':''}>${m} Months</option>`).join("")}
-            </select>
+            </select>` : `${ef.monthsTarget || 6} Months`}
           </td>
           <td style="font-weight:700; color:var(--ledger); font-size:13.5px;">${fmt(efGoal)}</td>
-          <td><input type="number" value="${ef.monthly}" onchange="updateEmergencyFund('monthly', this.value); triggerHaptic('light');"></td>
-          <td><input type="number" value="${ef.saved}" onchange="updateEmergencyFund('saved', this.value); triggerHaptic('light');"></td>
+          <td>${isEfEditing ? `<input type="number" id="edit-ef-monthly" value="${ef.monthly}">` : `${fmt(ef.monthly)} / mo`}</td>
+          <td>${isEfEditing ? `<input type="number" id="edit-ef-saved" value="${ef.saved}">` : `<span class="amt-pos" style="font-weight:600;">${fmt(ef.saved)}</span>`}</td>
           <td class="${efLeft>0?'amt-neg':'amt-pos'}">${fmt(efLeft)}</td>
           <td>
             <div class="progress-wrap">
@@ -2867,6 +2982,14 @@ function renderSavings(){
           </td>
           <td>${efMonths}</td>
           <td class="text" style="font-weight:600;">${efEstDate}</td>
+          <td style="white-space:nowrap; text-align:right;">
+            ${isEfEditing ? `
+            <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveEmergencyFund(); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+            <button class="btn secondary btn-action" onclick="editingSection=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+            ` : `
+            <button class="btn secondary btn-action" onclick="editingSection='ef'; activeEditId=null; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+            `}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -2890,18 +3013,27 @@ function renderSavings(){
   </div>
   `;
 }
-function updateSaving(id, field, val){
+function saveSaving(id) {
   const g = state.savingsGoals.find(x=>x.id===id); if(!g) return;
-  g[field] = field==="name" ? val : (parseFloat(val)||0);
+  g.name = document.getElementById("edit-g-name") ? document.getElementById("edit-g-name").value : g.name;
+  g.goal = parseFloat(document.getElementById("edit-g-goal").value) || 0;
+  g.starting = parseFloat(document.getElementById("edit-g-starting").value) || 0;
+  g.monthly = parseFloat(document.getElementById("edit-g-monthly").value) || 0;
+  g.saved = parseFloat(document.getElementById("edit-g-saved").value) || 0;
   g.updatedAt = Date.now();
+  activeEditId = null;
   saveDataState(); render();
 }
 function addSaving(){
-  state.savingsGoals.push({id:uid(), name:"New Goal", goal:0, starting:0, monthly:0, saved:0, updatedAt: Date.now()});
+  const newId = uid();
+  state.savingsGoals.push({id:newId, name:"New Goal", goal:0, starting:0, monthly:0, saved:0, updatedAt: Date.now()});
+  activeEditId = newId; // Immediately open new goal in edit mode!
+  editingSection = null;
   saveDataState(); render();
 }
 function deleteSaving(id){
   showConfirmAlert("Delete Goal", "Are you sure you want to delete this savings goal?", () => {
+    if (activeEditId === id) activeEditId = null;
     if (!state.deletedIds) state.deletedIds = [];
     state.deletedIds.push(id);
     if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -2909,9 +3041,12 @@ function deleteSaving(id){
     saveDataState(); render();
   }); 
 }
-function updateEmergencyFund(field, val) {
+function saveEmergencyFund() {
   if (!state.emergencyFund) state.emergencyFund = { monthsTarget: 6, saved: 0, monthly: 0 };
-  state.emergencyFund[field] = field === "monthsTarget" ? (parseInt(val, 10) || 6) : (parseFloat(val) || 0);
+  state.emergencyFund.monthsTarget = parseInt(document.getElementById("edit-ef-target").value, 10) || 6;
+  state.emergencyFund.monthly = parseFloat(document.getElementById("edit-ef-monthly").value) || 0;
+  state.emergencyFund.saved = parseFloat(document.getElementById("edit-ef-saved").value) || 0;
+  editingSection = null;
   saveDataState();
   render();
 }
@@ -2920,18 +3055,35 @@ function updateEmergencyFund(field, val) {
 function renderDebt(){
   const accts = state.accounts || [];
   const totalCashBank = accts.reduce((s, a) => s + (+a.balance || 0), 0);
-  const acctRows = accts.map(a => `
+  const acctRows = accts.map(a => {
+    if (activeEditId === a.id) {
+      return `
+      <tr style="background:var(--card-hover);">
+        <td class="text"><input type="text" id="edit-a-name" value="${a.name}"></td>
+        <td>
+          <select id="edit-a-type" style="width:130px; font-weight:600;">
+            <option value="Debit" ${a.type==='Debit'?'selected':''}>Debit / Bank</option>
+            <option value="Cash" ${a.type==='Cash'?'selected':''}>Cash Wallet</option>
+          </select>
+        </td>
+        <td><input type="number" id="edit-a-bal" value="${a.balance}"></td>
+        <td style="white-space:nowrap; text-align:right;">
+          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveAccount('${a.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+        </td>
+      </tr>`;
+    }
+    return `
     <tr>
-      <td class="text"><input type="text" value="${a.name}" onchange="updateAccount('${a.id}','name',this.value); triggerHaptic('light');"></td>
-      <td>
-        <select style="width:110px; font-weight:600;" onchange="updateAccount('${a.id}','type',this.value); triggerHaptic('light');">
-          <option value="Debit" ${a.type==='Debit'?'selected':''}>🏦 Debit</option>
-          <option value="Cash" ${a.type==='Cash'?'selected':''}>💵 Cash</option>
-        </select>
+      <td class="text" style="font-weight:600;">${a.name}</td>
+      <td class="text"><span style="display:inline-flex;align-items:center;">${a.type === 'Cash' ? ICONS.cash : ICONS.bank} ${a.type === 'Cash' ? 'Cash' : 'Debit / Bank'}</span></td>
+      <td class="${+a.balance >= 0 ? 'amt-pos' : 'amt-neg'}" style="font-weight:600;">${fmt(a.balance)}</td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${a.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteAccount('${a.id}')" title="Delete">${ICONS.delete}</button>
       </td>
-      <td><input type="number" value="${a.balance}" onchange="updateAccount('${a.id}','balance',this.value); triggerHaptic('light');"></td>
-      <td><button class="btn danger" onclick="deleteAccount('${a.id}')">✕</button></td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 
   const ccs = state.creditCards || [];
   const totalLimit = ccs.reduce((s, c) => s + (+c.limit || 0), 0);
@@ -2944,11 +3096,27 @@ function renderDebt(){
     const bal = +c.balance || 0;
     const avail = Math.max(0, limit - bal);
     const util = limit ? Math.min(100, (bal / limit * 100)) : (bal > 0 ? 100 : 0);
+
+    if (activeEditId === c.id) {
+      return `
+      <tr style="background:var(--card-hover);">
+        <td class="text"><input type="text" id="edit-c-name" value="${c.name}"></td>
+        <td><input type="number" id="edit-c-limit" value="${c.limit}"></td>
+        <td><input type="number" id="edit-c-bal" value="${c.balance}"></td>
+        <td class="${avail > 0 ? 'amt-pos' : 'amt-neg'}">${fmt(avail)}</td>
+        <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${util}%;${util > 80 ? 'background:var(--brick);' : ''}"></div></div><div class="progress-pct">${pct(util)}</div></div></td>
+        <td style="white-space:nowrap; text-align:right;">
+          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveCreditCard('${c.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+        </td>
+      </tr>`;
+    }
+
     return `
     <tr>
-      <td class="text"><input type="text" value="${c.name}" onchange="updateCreditCard('${c.id}','name',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${c.limit}" onchange="updateCreditCard('${c.id}','limit',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${c.balance}" onchange="updateCreditCard('${c.id}','balance',this.value); triggerHaptic('light');"></td>
+      <td class="text" style="font-weight:600;">${c.name}</td>
+      <td>${fmt(c.limit)}</td>
+      <td class="amt-neg" style="font-weight:600;">${fmt(c.balance)}</td>
       <td class="${avail > 0 ? 'amt-pos' : 'amt-neg'}">${fmt(avail)}</td>
       <td>
         <div class="progress-wrap">
@@ -2956,7 +3124,10 @@ function renderDebt(){
           <div class="progress-pct">${pct(util)}</div>
         </div>
       </td>
-      <td><button class="btn danger" onclick="deleteCreditCard('${c.id}')">✕</button></td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${c.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteCreditCard('${c.id}')" title="Delete">${ICONS.delete}</button>
+      </td>
     </tr>`;
   }).join("");
 
@@ -2969,30 +3140,53 @@ function renderDebt(){
   const rows = debts.map(d=>{
     const progress = d.original ? Math.min(100,((d.original-d.current)/d.original*100)) : 0;
     const totalPay = (+d.minPayment||0)+(+d.extraPayment||0);
+
+    if (activeEditId === d.id) {
+      return `
+      <tr style="background:var(--card-hover);">
+        <td class="text"><input type="text" id="edit-d-name" value="${d.name}"></td>
+        <td class="text"><input type="text" id="edit-d-type" value="${d.type}"></td>
+        <td><input type="number" id="edit-d-orig" value="${d.original}"></td>
+        <td><input type="number" id="edit-d-curr" value="${d.current}"></td>
+        <td><input type="number" id="edit-d-rate" value="${d.rate}" style="width:60px;">%</td>
+        <td><input type="number" id="edit-d-min" value="${d.minPayment}"></td>
+        <td><input type="number" id="edit-d-extra" value="${d.extraPayment}"></td>
+        <td>${fmt(totalPay)}</td>
+        <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-pct">${pct(progress)}</div></div></td>
+        <td style="white-space:nowrap; text-align:right;">
+          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveDebt('${d.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+        </td>
+      </tr>`;
+    }
+
     return `
     <tr>
-      <td class="text"><input type="text" value="${d.name}" onchange="updateDebt('${d.id}','name',this.value); triggerHaptic('light');"></td>
-      <td class="text"><input type="text" value="${d.type}" onchange="updateDebt('${d.id}','type',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${d.original}" onchange="updateDebt('${d.id}','original',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${d.current}" onchange="updateDebt('${d.id}','current',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${d.rate}" onchange="updateDebt('${d.id}','rate',this.value); triggerHaptic('light');">%</td>
-      <td><input type="number" value="${d.minPayment}" onchange="updateDebt('${d.id}','minPayment',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${d.extraPayment}" onchange="updateDebt('${d.id}','extraPayment',this.value); triggerHaptic('light');"></td>
-      <td>${fmt(totalPay)}</td>
+      <td class="text" style="font-weight:600;">${d.name}</td>
+      <td class="text">${d.type}</td>
+      <td>${fmt(d.original)}</td>
+      <td class="amt-neg" style="font-weight:600;">${fmt(d.current)}</td>
+      <td>${d.rate}%</td>
+      <td>${fmt(d.minPayment)} / mo</td>
+      <td>${fmt(d.extraPayment)} / mo</td>
+      <td style="font-weight:600;">${fmt(totalPay)}</td>
       <td>
         <div class="progress-wrap">
           <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
           <div class="progress-pct">${pct(progress)}</div>
         </div>
       </td>
-      <td><button class="btn danger" onclick="deleteDebt('${d.id}')">✕</button></td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${d.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteDebt('${d.id}')" title="Delete">${ICONS.delete}</button>
+      </td>
     </tr>`;
   }).join("");
 
   return `
   <div class="page-header">
     <div><div class="page-title">Accounts &amp; Debts<span class="rule"></span></div>
-    <div class="page-desc">Manage your bank balances, cash wallets, credit card limits, and long-term loan payoffs all in one hub.</div></div>
+    <div class="page-desc">Manage your bank balances, cash wallets, credit card limits, and long-term loan payoffs. Tap ✎ to edit any row!</div></div>
   </div>
 
   <div class="kpi-row">
@@ -3055,19 +3249,25 @@ function renderDebt(){
   </div>
   `;
 }
-function updateAccount(id, field, val){
+function saveAccount(id) {
   const a = (state.accounts || []).find(x=>x.id===id); if(!a) return;
-  a[field] = (field === "name" || field === "type") ? val : (parseFloat(val) || 0);
+  a.name = document.getElementById("edit-a-name") ? document.getElementById("edit-a-name").value : a.name;
+  a.type = document.getElementById("edit-a-type") ? document.getElementById("edit-a-type").value : a.type;
+  a.balance = parseFloat(document.getElementById("edit-a-bal").value) || 0;
   a.updatedAt = Date.now();
+  activeEditId = null;
   saveDataState(); render();
 }
 function addAccount(){
   if (!state.accounts) state.accounts = [];
-  state.accounts.push({id:uid(), name:"New Account", type:"Debit", balance:1000, updatedAt: Date.now()});
+  const newId = uid();
+  state.accounts.push({id:newId, name:"New Account", type:"Debit", balance:1000, updatedAt: Date.now()});
+  activeEditId = newId;
   saveDataState(); render();
 }
 function deleteAccount(id){
   showConfirmAlert("Delete Account", "Are you sure you want to delete this account?", () => {
+    if (activeEditId === id) activeEditId = null;
     if (!state.deletedIds) state.deletedIds = [];
     state.deletedIds.push(id);
     if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -3075,19 +3275,25 @@ function deleteAccount(id){
     saveDataState(); render();
   });
 }
-function updateCreditCard(id, field, val){
+function saveCreditCard(id) {
   const c = (state.creditCards || []).find(x=>x.id===id); if(!c) return;
-  c[field] = field === "name" ? val : (parseFloat(val) || 0);
+  c.name = document.getElementById("edit-c-name") ? document.getElementById("edit-c-name").value : c.name;
+  c.limit = parseFloat(document.getElementById("edit-c-limit").value) || 0;
+  c.balance = parseFloat(document.getElementById("edit-c-bal").value) || 0;
   c.updatedAt = Date.now();
+  activeEditId = null;
   saveDataState(); render();
 }
 function addCreditCard(){
   if (!state.creditCards) state.creditCards = [];
-  state.creditCards.push({id:uid(), name:"New Card", limit:1000, balance:0, updatedAt: Date.now()});
+  const newId = uid();
+  state.creditCards.push({id:newId, name:"New Card", limit:1000, balance:0, updatedAt: Date.now()});
+  activeEditId = newId;
   saveDataState(); render();
 }
 function deleteCreditCard(id){
   showConfirmAlert("Delete Credit Card", "Are you sure you want to delete this credit card?", () => {
+    if (activeEditId === id) activeEditId = null;
     if (!state.deletedIds) state.deletedIds = [];
     state.deletedIds.push(id);
     if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -3095,18 +3301,28 @@ function deleteCreditCard(id){
     saveDataState(); render();
   });
 }
-function updateDebt(id, field, val){
+function saveDebt(id) {
   const d = state.debts.find(x=>x.id===id); if(!d) return;
-  d[field] = (field==="name"||field==="type") ? val : (parseFloat(val)||0);
+  d.name = document.getElementById("edit-d-name") ? document.getElementById("edit-d-name").value : d.name;
+  d.type = document.getElementById("edit-d-type") ? document.getElementById("edit-d-type").value : d.type;
+  d.original = parseFloat(document.getElementById("edit-d-orig").value) || 0;
+  d.current = parseFloat(document.getElementById("edit-d-curr").value) || 0;
+  d.rate = parseFloat(document.getElementById("edit-d-rate").value) || 0;
+  d.minPayment = parseFloat(document.getElementById("edit-d-min").value) || 0;
+  d.extraPayment = parseFloat(document.getElementById("edit-d-extra").value) || 0;
   d.updatedAt = Date.now();
+  activeEditId = null;
   saveDataState(); render();
 }
 function addDebt(){
-  state.debts.push({id:uid(), name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0, updatedAt: Date.now()});
+  const newId = uid();
+  state.debts.push({id:newId, name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0, updatedAt: Date.now()});
+  activeEditId = newId;
   saveDataState(); render();
 }
 function deleteDebt(id){
   showConfirmAlert("Delete Debt", "Are you sure you want to delete this debt entry?", () => {
+    if (activeEditId === id) activeEditId = null;
     if (!state.deletedIds) state.deletedIds = [];
     state.deletedIds.push(id);
     if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -3119,21 +3335,47 @@ function deleteDebt(id){
 function renderNetWorth(){
   const rows = state.netWorth.map(e=>{
     const {assets, liabilities, net} = netWorthTotal(e);
+
+    if (activeEditId === e.id) {
+      return `
+      <tr style="background:var(--card-hover);">
+        <td class="text"><input type="text" id="edit-nw-month" value="${e.month}"></td>
+        <td><input type="number" id="edit-nw-cash" value="${e.cash}"></td>
+        <td><input type="number" id="edit-nw-inv" value="${e.investments}"></td>
+        <td><input type="number" id="edit-nw-prop" value="${e.property}"></td>
+        <td><input type="number" id="edit-nw-oth" value="${e.otherAssets}"></td>
+        <td class="amt-pos">${fmt(assets)}</td>
+        <td><input type="number" id="edit-nw-cc" value="${e.creditCards}"></td>
+        <td><input type="number" id="edit-nw-loans" value="${e.loans}"></td>
+        <td><input type="number" id="edit-nw-mort" value="${e.mortgage}"></td>
+        <td><input type="number" id="edit-nw-othl" value="${e.otherLiabilities}"></td>
+        <td class="amt-neg">${fmt(liabilities)}</td>
+        <td class="${net<0?'amt-neg':'amt-pos'}">${fmt(net)}</td>
+        <td style="white-space:nowrap; text-align:right;">
+          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveNW('${e.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
+          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
+        </td>
+      </tr>`;
+    }
+
     return `
     <tr>
-      <td class="text"><input type="text" value="${e.month}" onchange="updateNW('${e.id}','month',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.cash}" onchange="updateNW('${e.id}','cash',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.investments}" onchange="updateNW('${e.id}','investments',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.property}" onchange="updateNW('${e.id}','property',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.otherAssets}" onchange="updateNW('${e.id}','otherAssets',this.value); triggerHaptic('light');"></td>
-      <td class="amt-pos">${fmt(assets)}</td>
-      <td><input type="number" value="${e.creditCards}" onchange="updateNW('${e.id}','creditCards',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.loans}" onchange="updateNW('${e.id}','loans',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.mortgage}" onchange="updateNW('${e.id}','mortgage',this.value); triggerHaptic('light');"></td>
-      <td><input type="number" value="${e.otherLiabilities}" onchange="updateNW('${e.id}','otherLiabilities',this.value); triggerHaptic('light');"></td>
-      <td class="amt-neg">${fmt(liabilities)}</td>
-      <td class="${net<0?'amt-neg':'amt-pos'}">${fmt(net)}</td>
-      <td><button class="btn danger" onclick="deleteNW('${e.id}')">✕</button></td>
+      <td class="text" style="font-weight:600;">${e.month}</td>
+      <td>${fmt(e.cash)}</td>
+      <td>${fmt(e.investments)}</td>
+      <td>${fmt(e.property)}</td>
+      <td>${fmt(e.otherAssets)}</td>
+      <td class="amt-pos" style="font-weight:600;">${fmt(assets)}</td>
+      <td class="amt-neg">${fmt(e.creditCards)}</td>
+      <td class="amt-neg">${fmt(e.loans)}</td>
+      <td class="amt-neg">${fmt(e.mortgage)}</td>
+      <td class="amt-neg">${fmt(e.otherLiabilities)}</td>
+      <td class="amt-neg" style="font-weight:600;">${fmt(liabilities)}</td>
+      <td class="${net<0?'amt-neg':'amt-pos'}" style="font-weight:700;">${fmt(net)}</td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${e.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
+        <button class="btn danger btn-action" onclick="deleteNW('${e.id}')" title="Delete">${ICONS.delete}</button>
+      </td>
     </tr>`;
   }).join("");
 
@@ -3159,7 +3401,7 @@ function renderNetWorth(){
   return `
   <div class="page-header">
     <div><div class="page-title">Net Worth Tracker<span class="rule"></span></div>
-    <div class="page-desc">Log your assets and liabilities each month to watch your net worth trend over time.</div></div>
+    <div class="page-desc">Log your assets and liabilities each month to watch your net worth trend over time. Tap ✎ to safely edit entries!</div></div>
   </div>
   <div class="section">
     <div class="section-title">Trend</div>
@@ -3177,18 +3419,30 @@ function renderNetWorth(){
   </div>
   `;
 }
-function updateNW(id, field, val){
+function saveNW(id) {
   const e = state.netWorth.find(x=>x.id===id); if(!e) return;
-  e[field] = field==="month" ? val : (parseFloat(val)||0);
+  e.month = document.getElementById("edit-nw-month") ? document.getElementById("edit-nw-month").value : e.month;
+  e.cash = parseFloat(document.getElementById("edit-nw-cash").value) || 0;
+  e.investments = parseFloat(document.getElementById("edit-nw-inv").value) || 0;
+  e.property = parseFloat(document.getElementById("edit-nw-prop").value) || 0;
+  e.otherAssets = parseFloat(document.getElementById("edit-nw-oth").value) || 0;
+  e.creditCards = parseFloat(document.getElementById("edit-nw-cc").value) || 0;
+  e.loans = parseFloat(document.getElementById("edit-nw-loans").value) || 0;
+  e.mortgage = parseFloat(document.getElementById("edit-nw-mort").value) || 0;
+  e.otherLiabilities = parseFloat(document.getElementById("edit-nw-othl").value) || 0;
   e.updatedAt = Date.now();
+  activeEditId = null;
   saveDataState(); render();
 }
 function addNW(){
-  state.netWorth.push({id:uid(), month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0, updatedAt: Date.now()});
+  const newId = uid();
+  state.netWorth.push({id:newId, month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0, updatedAt: Date.now()});
+  activeEditId = newId;
   saveDataState(); render();
 }
 function deleteNW(id){
   showConfirmAlert("Delete Entry", "Are you sure you want to delete this net worth record?", () => {
+    if (activeEditId === id) activeEditId = null;
     if (!state.deletedIds) state.deletedIds = [];
     state.deletedIds.push(id);
     if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -3199,15 +3453,18 @@ function deleteNW(id){
 
 /* ============================= CATEGORIES ============================= */
 function renderCategories(){
+  const isIncEditing = (editingSection === 'inc');
+  const isExpEditing = (editingSection === 'exp');
+
   const incomeTags = state.categories.income.map(c=>`
-    <div class="tag">${c}<button onclick="removeCategory('income','${c}')">✕</button></div>`).join("");
+    <div class="tag">${c}${isIncEditing ? `<button onclick="removeCategory('income','${c}')" title="Delete" style="display:inline-flex;align-items:center;">${ICONS.close}</button>` : ''}</div>`).join("");
   const expenseTags = state.categories.expense.map(c=>`
-    <div class="tag">${c}<button onclick="removeCategory('expense','${c}')">✕</button></div>`).join("");
+    <div class="tag">${c}${isExpEditing ? `<button onclick="removeCategory('expense','${c}')" title="Delete" style="display:inline-flex;align-items:center;">${ICONS.close}</button>` : ''}</div>`).join("");
 
   return `
   <div class="page-header">
     <div><div class="page-title">Categories<span class="rule"></span></div>
-    <div class="page-desc">Edit these lists to customize every dropdown across the tracker.</div></div>
+    <div class="page-desc">Edit these lists to customize every dropdown across the tracker. Tap Edit to add or remove categories!</div></div>
     <div class="controls">
       <label style="font-size:12px;color:var(--muted);">Currency symbol</label>
       <input type="text" value="${state.currency}" style="width:50px" onchange="state.currency=this.value||'$'; saveDataState(); render(); triggerHaptic('light');">
@@ -3215,20 +3472,28 @@ function renderCategories(){
   </div>
   <div class="two-col">
     <div class="section">
-      <div class="section-title">Income Categories</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:0;">Income Categories</div>
+        <button class="btn secondary" style="padding:4px 10px;min-height:32px;display:inline-flex;align-items:center;" onclick="editingSection = isIncEditing ? null : 'inc'; render(); triggerHaptic('light');">${isIncEditing ? 'Done' : `${ICONS.edit} Edit`}</button>
+      </div>
       <div class="tag-list">${incomeTags || '<span class="empty-msg">None yet.</span>'}</div>
+      ${isIncEditing ? `
       <div class="add-row">
         <input type="text" id="new-income-cat" class="desc" placeholder="New income category">
         <button class="btn secondary" onclick="addCategory('income'); triggerHaptic('medium');">+ Add</button>
-      </div>
+      </div>` : ''}
     </div>
     <div class="section">
-      <div class="section-title">Expense Categories</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:0;">Expense Categories</div>
+        <button class="btn secondary" style="padding:4px 10px;min-height:32px;display:inline-flex;align-items:center;" onclick="editingSection = isExpEditing ? null : 'exp'; render(); triggerHaptic('light');">${isExpEditing ? 'Done' : `${ICONS.edit} Edit`}</button>
+      </div>
       <div class="tag-list">${expenseTags || '<span class="empty-msg">None yet.</span>'}</div>
+      ${isExpEditing ? `
       <div class="add-row">
         <input type="text" id="new-expense-cat" class="desc" placeholder="New expense category">
         <button class="btn secondary" onclick="addCategory('expense'); triggerHaptic('medium');">+ Add</button>
-      </div>
+      </div>` : ''}
     </div>
   </div>
   <div class="small-note">Removing a category doesn't delete past transactions logged under it — it just stops appearing in the dropdowns.</div>
@@ -3236,7 +3501,7 @@ function renderCategories(){
 }
 function addCategory(kind){
   const input = document.getElementById(kind==="income"?"new-income-cat":"new-expense-cat");
-  const val = input.value.trim();
+  const val = input ? input.value.trim() : "";
   if (!val) return;
   if (!state.categories[kind].includes(val)) state.categories[kind].push(val);
   saveDataState(); render();
