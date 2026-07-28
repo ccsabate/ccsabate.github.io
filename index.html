@@ -1221,6 +1221,7 @@ const uid = () => Math.random().toString(36).slice(2,10);
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 let isDirty = false; // Prevents idle wakeup events from accidentally pushing stale memory
+let editingTxId = null; // Tracks inline editing state on the Transactions tab
 
 function defaultState(){
   return {
@@ -2122,6 +2123,7 @@ function updateTabIndicator(bar, targetId, animate = true){
 
 function switchTab(id){ 
   if (state.activeTab !== id) triggerHaptic('light');
+  editingTxId = null; // Reset edit state when switching tabs
   state.activeTab = id; 
   saveUIState(); // Save locally without touching cloud!
   window.scrollTo(0,0); 
@@ -2326,7 +2328,10 @@ function renderTransactions(){
       <td class="text">${t.category}</td>
       <td class="${t.type==='Income'?'amt-pos':(t.type==='CC Payment'?'amt-pos':'amt-neg')}">${t.type==='Income'?'+':(t.type==='CC Payment'?'✓ ':'-')}${fmt(t.amount)}</td>
       <td class="text">${t.account||""}</td>
-      <td><button class="btn danger" onclick="deleteTransaction('${t.id}')">✕</button></td>
+      <td style="white-space:nowrap; text-align:right;">
+        <button class="btn secondary" style="padding:6px 10px;min-height:36px;min-width:36px;margin-right:4px;" onclick="editTransaction('${t.id}')" title="Edit">✎</button>
+        <button class="btn danger" style="padding:6px 10px;min-height:36px;min-width:36px;" onclick="deleteTransaction('${t.id}')" title="Delete">✕</button>
+      </td>
     </tr>`;
   }).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
 
@@ -2334,7 +2339,7 @@ function renderTransactions(){
   <div class="page-header">
     <div>
       <div class="page-title">Transactions<span class="rule"></span></div>
-      <div class="page-desc">Your yearly transaction log. Swiping a card automatically adjusts your credit limits, while CC Payments restore your available credit!</div>
+      <div class="page-desc">Your yearly transaction log. Tap ✎ to edit any entry directly without re-typing!</div>
     </div>
   </div>
   <div class="section">
@@ -2358,7 +2363,8 @@ function renderTransactions(){
       </select>
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
       <input type="text" id="tx-acct" class="short" placeholder="Account">
-      <button class="btn" onclick="addTransaction(); triggerHaptic('medium');">Save</button>
+      <button class="btn" id="tx-save-btn" onclick="addTransaction(); triggerHaptic('medium');">Save</button>
+      <button class="btn secondary" id="tx-cancel-btn" style="display:none;" onclick="cancelEditTx(); triggerHaptic('light');">Cancel</button>
     </div>
     
     <div class="table-wrap">
@@ -2372,7 +2378,10 @@ function renderTransactions(){
 }
 function toggleAddTx(){
   const form = document.getElementById("add-tx-form");
-  if(form) form.classList.toggle("open");
+  if(form) {
+    if (editingTxId) cancelEditTx();
+    form.classList.toggle("open");
+  }
 }
 function syncTxCategory(){
   const type = document.getElementById("tx-type").value;
@@ -2384,11 +2393,63 @@ function syncTxCategory(){
     catEl.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
   }
 }
+
+function editTransaction(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+  editingTxId = id;
+  
+  const form = document.getElementById("add-tx-form");
+  if (form && !form.classList.contains("open")) {
+    form.classList.add("open");
+  }
+  
+  document.getElementById("tx-date").value = tx.date || todayStr();
+  document.getElementById("tx-desc").value = tx.description || "";
+  document.getElementById("tx-type").value = tx.type || "Expense";
+  
+  syncTxCategory();
+  document.getElementById("tx-cat").value = tx.category || "";
+  
+  if (document.getElementById("tx-cc")) {
+    document.getElementById("tx-cc").value = tx.creditCardId || "";
+  }
+  document.getElementById("tx-amt").value = tx.amount || "";
+  document.getElementById("tx-acct").value = tx.account || "";
+  
+  const saveBtn = document.getElementById("tx-save-btn");
+  if (saveBtn) saveBtn.textContent = "Update";
+  const cancelBtn = document.getElementById("tx-cancel-btn");
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+  
+  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  triggerHaptic('medium');
+}
+
+function cancelEditTx() {
+  editingTxId = null;
+  const form = document.getElementById("add-tx-form");
+  if (form) {
+    document.getElementById("tx-date").value = todayStr();
+    document.getElementById("tx-desc").value = "";
+    document.getElementById("tx-type").value = "Expense";
+    syncTxCategory();
+    if (document.getElementById("tx-cc")) document.getElementById("tx-cc").value = "";
+    document.getElementById("tx-amt").value = "";
+    document.getElementById("tx-acct").value = "";
+    
+    const saveBtn = document.getElementById("tx-save-btn");
+    if (saveBtn) saveBtn.textContent = "Save";
+    const cancelBtn = document.getElementById("tx-cancel-btn");
+    if (cancelBtn) cancelBtn.style.display = "none";
+  }
+}
+
 function addTransaction(){
   const date = document.getElementById("tx-date").value || todayStr();
   const description = document.getElementById("tx-desc").value || "Untitled";
-  const category = document.getElementById("tx-cat").value;
   const type = document.getElementById("tx-type").value;
+  const category = document.getElementById("tx-cat").value;
   const amount = parseFloat(document.getElementById("tx-amt").value) || 0;
   const account = document.getElementById("tx-acct").value;
   const ccId = document.getElementById("tx-cc") ? document.getElementById("tx-cc").value : "";
@@ -2396,25 +2457,77 @@ function addTransaction(){
 
   if (ccId && state.creditCards) {
     const card = state.creditCards.find(c => c.id === ccId);
-    if (card) {
-      ccName = card.name;
-      if (type === "Expense") {
-        card.balance = (Number(card.balance) || 0) + amount;
-      } else if (type === "CC Payment" || type === "Income") {
-        card.balance = Math.max(0, (Number(card.balance) || 0) - amount);
-      }
-      card.updatedAt = Date.now();
-    }
+    if (card) ccName = card.name;
   }
 
-  state.transactions.push({id:uid(), date, description, category, type, amount, account, creditCardId:ccId, creditCardName:ccName, updatedAt: Date.now()});
-  saveDataState(); render();
+  if (editingTxId) {
+    // 1. Updating an Existing Transaction
+    const tx = state.transactions.find(t => t.id === editingTxId);
+    if (tx) {
+      // Step A: Reverse old credit card effect if there was one
+      if (tx.creditCardId && state.creditCards) {
+        const oldCard = state.creditCards.find(c => c.id === tx.creditCardId);
+        if (oldCard) {
+          if (tx.type === "Expense") {
+            oldCard.balance = Math.max(0, (Number(oldCard.balance) || 0) - (Number(tx.amount) || 0));
+          } else if (tx.type === "CC Payment" || tx.type === "Income") {
+            oldCard.balance = (Number(oldCard.balance) || 0) + (Number(tx.amount) || 0);
+          }
+          oldCard.updatedAt = Date.now();
+        }
+      }
+
+      // Step B: Apply new credit card effect
+      if (ccId && state.creditCards) {
+        const newCard = state.creditCards.find(c => c.id === ccId);
+        if (newCard) {
+          if (type === "Expense") {
+            newCard.balance = (Number(newCard.balance) || 0) + amount;
+          } else if (type === "CC Payment" || type === "Income") {
+            newCard.balance = Math.max(0, (Number(newCard.balance) || 0) - amount);
+          }
+          newCard.updatedAt = Date.now();
+        }
+      }
+
+      // Step C: Update transaction object properties
+      tx.date = date;
+      tx.description = description;
+      tx.type = type;
+      tx.category = category;
+      tx.amount = amount;
+      tx.account = account;
+      tx.creditCardId = ccId;
+      tx.creditCardName = ccName;
+      tx.updatedAt = Date.now();
+    }
+    editingTxId = null;
+  } else {
+    // 2. Adding a New Transaction
+    if (ccId && state.creditCards) {
+      const card = state.creditCards.find(c => c.id === ccId);
+      if (card) {
+        if (type === "Expense") {
+          card.balance = (Number(card.balance) || 0) + amount;
+        } else if (type === "CC Payment" || type === "Income") {
+          card.balance = Math.max(0, (Number(card.balance) || 0) - amount);
+        }
+        card.updatedAt = Date.now();
+      }
+    }
+    state.transactions.push({id:uid(), date, description, category, type, amount, account, creditCardId:ccId, creditCardName:ccName, updatedAt: Date.now()});
+  }
+
+  saveDataState(); 
+  render();
 }
+
 function deleteTransaction(id){
   showConfirmAlert(
     "Delete Transaction",
     "Are you sure you want to delete this transaction?",
     () => {
+      if (editingTxId === id) editingTxId = null;
       const tx = state.transactions.find(t => t.id === id);
       if (tx && tx.creditCardId && state.creditCards) {
         const card = state.creditCards.find(c => c.id === tx.creditCardId);
