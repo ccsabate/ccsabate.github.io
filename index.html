@@ -1237,8 +1237,8 @@ function defaultState(){
       expense: ["Housing / Rent","Utilities","Groceries","Transportation","Insurance","Debt Payments","Dining Out","Entertainment","Subscriptions","Personal Care","Shopping","Health & Medical","Education","Miscellaneous"]
     },
     transactions: [
-      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, account:"Debit Card", updatedAt: Date.now()},
-      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, account:"Bank Transfer", updatedAt: Date.now()}
+      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, account:"Debit Card", creditCardId:"", creditCardName:"", updatedAt: Date.now()},
+      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, account:"Bank Transfer", creditCardId:"", creditCardName:"", updatedAt: Date.now()}
     ],
     budgets: {"Groceries":400,"Housing / Rent":1200,"Utilities":150,"Salary":3200},
     emergencyFund: {
@@ -1249,8 +1249,11 @@ function defaultState(){
     savingsGoals: [
       {id:uid(), name:"Travel", goal:200, starting:10, monthly:20, saved:110, updatedAt: Date.now()}
     ],
+    creditCards: [
+      {id:uid(), name:"Visa Platinum", limit:5000, balance:1200, updatedAt: Date.now()}
+    ],
     debts: [
-      {id:uid(), name:"Credit Card - Visa", type:"Credit Card", original:5000, current:3200, rate:24, minPayment:150, extraPayment:50, updatedAt: Date.now()}
+      {id:uid(), name:"Student Loan", type:"Personal Loan", original:15000, current:11200, rate:6.5, minPayment:250, extraPayment:50, updatedAt: Date.now()}
     ],
     netWorth: [
       {id:uid(), month:"Jan 2026", cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0, updatedAt: Date.now()}
@@ -1431,6 +1434,7 @@ function mergeFinancialData(serverData, localData) {
 
   merged.transactions = mergeArr(serverData.transactions, localData.transactions);
   merged.savingsGoals = mergeArr(serverData.savingsGoals, localData.savingsGoals);
+  merged.creditCards = mergeArr(serverData.creditCards, localData.creditCards);
   merged.debts = mergeArr(serverData.debts, localData.debts);
   merged.netWorth = mergeArr(serverData.netWorth, localData.netWorth);
   
@@ -1758,6 +1762,11 @@ function migrateEmergencyFund() {
   }
   if (!state.savingsGoals || !Array.isArray(state.savingsGoals)) {
     state.savingsGoals = [];
+  }
+  if (!state.creditCards || !Array.isArray(state.creditCards)) {
+    state.creditCards = [
+      {id: uid(), name: "Visa Platinum", limit: 5000, balance: 1200, updatedAt: Date.now()}
+    ];
   }
   const oldEfIdx = state.savingsGoals.findIndex(g => g.name && g.name.toLowerCase().includes("emergency"));
   if (oldEfIdx >= 0) {
@@ -2303,25 +2312,29 @@ function renderDashboard(){
 
 /* ============================= TRANSACTIONS ============================= */
 function renderTransactions(){
-  const rows = [...state.transactions].sort((a,b)=> b.date.localeCompare(a.date));
+  const rows = [...state.transactions].sort((a,b)=> b.date.localeCompare(a.date) || (b.updatedAt || 0) - (a.updatedAt || 0) || state.transactions.indexOf(b) - state.transactions.indexOf(a));
   const catOptions = state.categories.expense.map(c=>`<option value="${c}">${c}</option>`).join("");
+  const ccOptions = (state.creditCards || []).map(c=>`<option value="${c.id}">💳 ${c.name}</option>`).join("");
 
-  const body = rows.length ? rows.map(t => `
+  const body = rows.length ? rows.map(t => {
+    const cardBadge = t.creditCardName ? `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:2px;">💳 ${t.creditCardName}</div>` : "";
+    return `
     <tr>
       <td class="text">${t.date}</td>
-      <td class="text">${t.description}</td>
-      <td class="text">${t.type}</td>
+      <td class="text">${t.description}${cardBadge}</td>
+      <td class="text"><span style="${t.type==='CC Payment'?'color:var(--gold);font-weight:600;':''}">${t.type}</span></td>
       <td class="text">${t.category}</td>
-      <td class="${t.type==='Income'?'amt-pos':'amt-neg'}">${t.type==='Income'?'+':'-'}${fmt(t.amount)}</td>
+      <td class="${t.type==='Income'?'amt-pos':(t.type==='CC Payment'?'amt-pos':'amt-neg')}">${t.type==='Income'?'+':(t.type==='CC Payment'?'✓ ':'-')}${fmt(t.amount)}</td>
       <td class="text">${t.account||""}</td>
       <td><button class="btn danger" onclick="deleteTransaction('${t.id}')">✕</button></td>
-    </tr>`).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
+    </tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
 
   return `
   <div class="page-header">
     <div>
       <div class="page-title">Transactions<span class="rule"></span></div>
-      <div class="page-desc">Your yearly transaction log. Every entry here powers the budget, dashboard and category charts.</div>
+      <div class="page-desc">Your yearly transaction log. Swiping a card automatically adjusts your credit limits, while CC Payments restore your available credit!</div>
     </div>
   </div>
   <div class="section">
@@ -2336,8 +2349,13 @@ function renderTransactions(){
       <select id="tx-type" class="short" onchange="syncTxCategory()">
         <option value="Expense">Expense</option>
         <option value="Income">Income</option>
+        <option value="CC Payment">CC Payment</option>
       </select>
       <select id="tx-cat" class="cat">${catOptions}</select>
+      <select id="tx-cc" class="cat" style="width:140px;">
+        <option value="">-- No Card Used --</option>
+        ${ccOptions}
+      </select>
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
       <input type="text" id="tx-acct" class="short" placeholder="Account">
       <button class="btn" onclick="addTransaction(); triggerHaptic('medium');">Save</button>
@@ -2358,8 +2376,13 @@ function toggleAddTx(){
 }
 function syncTxCategory(){
   const type = document.getElementById("tx-type").value;
-  const list = type==="Income" ? state.categories.income : state.categories.expense;
-  document.getElementById("tx-cat").innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
+  const catEl = document.getElementById("tx-cat");
+  if (type === "CC Payment") {
+    catEl.innerHTML = `<option value="Credit Card Payment">Credit Card Payment</option>`;
+  } else {
+    const list = type==="Income" ? state.categories.income : state.categories.expense;
+    catEl.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
+  }
 }
 function addTransaction(){
   const date = document.getElementById("tx-date").value || todayStr();
@@ -2368,7 +2391,23 @@ function addTransaction(){
   const type = document.getElementById("tx-type").value;
   const amount = parseFloat(document.getElementById("tx-amt").value) || 0;
   const account = document.getElementById("tx-acct").value;
-  state.transactions.push({id:uid(), date, description, category, type, amount, account, updatedAt: Date.now()});
+  const ccId = document.getElementById("tx-cc") ? document.getElementById("tx-cc").value : "";
+  let ccName = "";
+
+  if (ccId && state.creditCards) {
+    const card = state.creditCards.find(c => c.id === ccId);
+    if (card) {
+      ccName = card.name;
+      if (type === "Expense") {
+        card.balance = (Number(card.balance) || 0) + amount;
+      } else if (type === "CC Payment" || type === "Income") {
+        card.balance = Math.max(0, (Number(card.balance) || 0) - amount);
+      }
+      card.updatedAt = Date.now();
+    }
+  }
+
+  state.transactions.push({id:uid(), date, description, category, type, amount, account, creditCardId:ccId, creditCardName:ccName, updatedAt: Date.now()});
   saveDataState(); render();
 }
 function deleteTransaction(id){
@@ -2376,6 +2415,18 @@ function deleteTransaction(id){
     "Delete Transaction",
     "Are you sure you want to delete this transaction?",
     () => {
+      const tx = state.transactions.find(t => t.id === id);
+      if (tx && tx.creditCardId && state.creditCards) {
+        const card = state.creditCards.find(c => c.id === tx.creditCardId);
+        if (card) {
+          if (tx.type === "Expense") {
+            card.balance = Math.max(0, (Number(card.balance) || 0) - (Number(tx.amount) || 0));
+          } else if (tx.type === "CC Payment" || tx.type === "Income") {
+            card.balance = (Number(card.balance) || 0) + (Number(tx.amount) || 0);
+          }
+          card.updatedAt = Date.now();
+        }
+      }
       if (!state.deletedIds) state.deletedIds = [];
       state.deletedIds.push(id);
       if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
@@ -2600,9 +2651,36 @@ function updateEmergencyFund(field, val) {
   render();
 }
 
-/* ============================= DEBT ============================= */
+/* ============================= DEBT & CREDIT CARDS ============================= */
 function renderDebt(){
-  const debts = state.debts;
+  const ccs = state.creditCards || [];
+  const totalLimit = ccs.reduce((s, c) => s + (+c.limit || 0), 0);
+  const totalCCBalance = ccs.reduce((s, c) => s + (+c.balance || 0), 0);
+  const totalAvailable = Math.max(0, totalLimit - totalCCBalance);
+  const overallCCUtil = totalLimit ? Math.min(100, (totalCCBalance / totalLimit * 100)) : 0;
+
+  const ccRows = ccs.map(c => {
+    const limit = +c.limit || 0;
+    const bal = +c.balance || 0;
+    const avail = Math.max(0, limit - bal);
+    const util = limit ? Math.min(100, (bal / limit * 100)) : (bal > 0 ? 100 : 0);
+    return `
+    <tr>
+      <td class="text"><input type="text" value="${c.name}" onchange="updateCreditCard('${c.id}','name',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${c.limit}" onchange="updateCreditCard('${c.id}','limit',this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${c.balance}" onchange="updateCreditCard('${c.id}','balance',this.value); triggerHaptic('light');"></td>
+      <td class="${avail > 0 ? 'amt-pos' : 'amt-neg'}">${fmt(avail)}</td>
+      <td>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="width:${util}%;${util > 80 ? 'background:var(--brick);' : ''}"></div></div>
+          <div class="progress-pct">${pct(util)}</div>
+        </div>
+      </td>
+      <td><button class="btn danger" onclick="deleteCreditCard('${c.id}')">✕</button></td>
+    </tr>`;
+  }).join("");
+
+  const debts = state.debts || [];
   const totalOriginal = debts.reduce((s,d)=>s+(+d.original||0),0);
   const totalCurrent = debts.reduce((s,d)=>s+(+d.current||0),0);
   const totalPayment = debts.reduce((s,d)=>s+(+d.minPayment||0)+(+d.extraPayment||0),0);
@@ -2633,17 +2711,42 @@ function renderDebt(){
 
   return `
   <div class="page-header">
-    <div><div class="page-title">Debt Tracker<span class="rule"></span></div>
-    <div class="page-desc">Track balances, rates and how much progress you've made paying each one down.</div></div>
+    <div><div class="page-title">Debt &amp; Credit Tracker<span class="rule"></span></div>
+    <div class="page-desc">Track revolving credit card balances, available credit limits, rates, and long-term loan payoffs.</div></div>
   </div>
+
   <div class="kpi-row">
-    <div class="kpi-card"><div class="kpi-label">Original Total</div><div class="kpi-value">${fmt(totalOriginal)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Current Balance</div><div class="kpi-value neg">${fmt(totalCurrent)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Monthly Payments</div><div class="kpi-value">${fmt(totalPayment)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Paid Off</div><div class="kpi-value">${pct(paidOffPct)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Credit Limit</div><div class="kpi-value">${fmt(totalLimit)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Credit Card Balances</div><div class="kpi-value neg">${fmt(totalCCBalance)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Available Credit</div><div class="kpi-value amt-pos">${fmt(totalAvailable)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">CC Utilization</div><div class="kpi-value ${overallCCUtil > 30 ? 'neg' : ''}">${pct(overallCCUtil)}</div></div>
   </div>
+
   <div class="section">
-    <div class="section-title">Debts</div>
+    <div class="section-title">
+      <span class="sec-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4.5" width="16" height="11" rx="1.5"/><line x1="2" y1="8" x2="18" y2="8"/><line x1="4.5" y1="12" x2="8.5" y2="12"/></svg></span>
+      <span>Credit Cards &amp; Available Credit</span>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Card Name</th><th>Credit Limit</th><th>Current Balance</th><th>Available Credit</th><th>Utilization</th><th></th></tr></thead>
+      <tbody>${ccRows || '<tr><td colspan="6" class="empty-msg">No credit cards added yet. Add your card below!</td></tr>'}</tbody>
+    </table>
+    </div>
+    <div class="add-row">
+      <button class="btn" onclick="addCreditCard(); triggerHaptic('medium');">+ Add Credit Card</button>
+    </div>
+  </div>
+
+  <div class="kpi-row" style="margin-top:20px;">
+    <div class="kpi-card"><div class="kpi-label">Loans Original Total</div><div class="kpi-value">${fmt(totalOriginal)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Loans Current Balance</div><div class="kpi-value neg">${fmt(totalCurrent)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Payments</div><div class="kpi-value">${fmt(totalPayment)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Loans Paid Off</div><div class="kpi-value">${pct(paidOffPct)}</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Term Debts &amp; Loans</div>
     <div class="table-wrap">
     <table>
       <thead><tr><th>Debt</th><th>Type</th><th>Original</th><th>Current</th><th>Rate</th><th>Min. Payment</th><th>Extra</th><th>Total / mo</th><th>Paid Off</th><th></th></tr></thead>
@@ -2655,6 +2758,26 @@ function renderDebt(){
     </div>
   </div>
   `;
+}
+function updateCreditCard(id, field, val){
+  const c = (state.creditCards || []).find(x=>x.id===id); if(!c) return;
+  c[field] = field === "name" ? val : (parseFloat(val) || 0);
+  c.updatedAt = Date.now();
+  saveDataState(); render();
+}
+function addCreditCard(){
+  if (!state.creditCards) state.creditCards = [];
+  state.creditCards.push({id:uid(), name:"New Card", limit:1000, balance:0, updatedAt: Date.now()});
+  saveDataState(); render();
+}
+function deleteCreditCard(id){
+  showConfirmAlert("Delete Credit Card", "Are you sure you want to delete this credit card?", () => {
+    if (!state.deletedIds) state.deletedIds = [];
+    state.deletedIds.push(id);
+    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
+    state.creditCards = state.creditCards.filter(c => c.id !== id);
+    saveDataState(); render();
+  });
 }
 function updateDebt(id, field, val){
   const d = state.debts.find(x=>x.id===id); if(!d) return;
