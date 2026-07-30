@@ -2370,7 +2370,15 @@ function renderTransactions(){
 
   const body = rows.length ? rows.map(t => {
     let methodBadge = "";
-    if (t.type === "CC Payment") {
+    let targetBadge = "";
+    
+    if (t.type === "Transfer") {
+      methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.bank} Transfer from ${t.accountName || 'Bank'}</span>`;
+      targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.bank} To ${t.targetAccountName || 'Account'}</div>`;
+    } else if (t.type === "Withdrawal") {
+      methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.cash} Withdrawal from ${t.accountName || 'Bank'}</span>`;
+      targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.cash} To ${t.targetAccountName || 'Cash Wallet'}</div>`;
+    } else if (t.type === "CC Payment") {
       methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.card} Paid CC from ${t.accountName || 'Bank'}</span>`;
     } else if (t.type === "Debt Payment") {
       methodBadge = `<span style="color:var(--gold);font-weight:600;display:inline-flex;align-items:center;">${ICONS.loan} Paid Debt from ${t.accountName || 'Bank'}</span>`;
@@ -2382,21 +2390,23 @@ function renderTransactions(){
       methodBadge = `<span style="display:inline-flex;align-items:center;">${ICONS.bank} ${t.accountName || t.account || 'Bank / Debit'}</span>`;
     }
 
-    let targetBadge = "";
-    if (t.creditCardName && t.type !== "Debt Payment") {
+    if (t.creditCardName && t.type !== "Debt Payment" && t.type !== "Transfer" && t.type !== "Withdrawal") {
       targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.card} ${t.creditCardName}</div>`;
-    } else if (t.debtName) {
+    } else if (t.debtName && t.type !== "Transfer" && t.type !== "Withdrawal") {
       targetBadge = `<div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;display:flex;align-items:center;">${ICONS.loan} ${t.debtName}</div>`;
     }
+    
+    let amtClass = t.type==='Income' ? 'amt-pos' : (t.type==='CC Payment' ? 'amt-pos' : (t.type==='Transfer' || t.type==='Withdrawal' ? 'text' : 'amt-neg'));
+    let amtPrefix = t.type==='Income' ? '+' : (t.type==='CC Payment' ? '✓ ' : (t.type==='Transfer' || t.type==='Withdrawal' ? '⇋ ' : '-'));
 
     return `
     <tr>
       <td class="text">${t.date}</td>
       <td class="text">${t.description}${targetBadge}</td>
-      <td class="text"><span style="${(t.type==='CC Payment' || t.type==='Debt Payment')?'color:var(--gold);font-weight:600;':''}">${t.type}</span></td>
+      <td class="text"><span style="${(t.type==='CC Payment' || t.type==='Debt Payment' || t.type==='Transfer' || t.type==='Withdrawal')?'color:var(--gold);font-weight:600;':''}">${t.type}</span></td>
       <td class="text">${t.category}</td>
       <td class="text" style="font-size:12px;">${methodBadge}</td>
-      <td class="${t.type==='Income'?'amt-pos':(t.type==='CC Payment'?'amt-pos':'amt-neg')}">${t.type==='Income'?'+':(t.type==='CC Payment'?'✓ ':'-')}${fmt(t.amount)}</td>
+      <td class="${amtClass}" style="${(t.type==='Transfer' || t.type==='Withdrawal')?'color:var(--muted);font-weight:600;':''}">${amtPrefix}${fmt(t.amount)}</td>
       <td style="white-space:nowrap; text-align:right;">
         <button class="btn secondary btn-action" style="margin-right:4px;" onclick="editTransaction('${t.id}')" title="Edit">${ICONS.edit}</button>
         <button class="btn danger btn-action" onclick="deleteTransaction('${t.id}')" title="Delete">${ICONS.delete}</button>
@@ -2425,6 +2435,8 @@ function renderTransactions(){
         <option value="Income">Income</option>
         <option value="CC Payment">CC Payment</option>
         <option value="Debt Payment">Debt Payment</option>
+        <option value="Transfer">Bank Transfer</option>
+        <option value="Withdrawal">Cash Withdrawal</option>
       </select>
       <select id="tx-cat" class="cat">${catOptions}</select>
       
@@ -2462,6 +2474,10 @@ function syncTxCategory(){
     const list = state.categories.expense;
     const debtCat = list.find(c => c.toLowerCase().includes("debt")) || "Debt Payments";
     catEl.innerHTML = list.map(c=>`<option value="${c}" ${c===debtCat?'selected':''}>${c}</option>`).join("");
+  } else if (type === "Transfer") {
+    catEl.innerHTML = `<option value="Bank Transfer">Bank Transfer</option>`;
+  } else if (type === "Withdrawal") {
+    catEl.innerHTML = `<option value="Cash Withdrawal">Cash Withdrawal</option>`;
   } else {
     const list = type==="Income" ? state.categories.income : state.categories.expense;
     catEl.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
@@ -2497,6 +2513,32 @@ function syncTxAccounts(selectedType = "Debit", selectedAcctId = "", selectedTar
       <select id="tx-to-debt" class="cat" style="width:170px;">
         <option value="">-- Select Debt --</option>
         ${toDebts}
+      </select>
+    `;
+  } else if (txType === "Transfer") {
+    const fromAccts = (state.accounts || []).filter(a=>a.type==="Debit").map(a => `<option value="${a.id}" ${a.id === selectedAcctId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    const toAccts = (state.accounts || []).filter(a=>a.type==="Debit").map(a => `<option value="${a.id}" ${a.id === selectedTargetId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    container.innerHTML = `
+      <select id="tx-from-acct" class="cat" style="width:150px;">
+        <option value="">-- From Bank --</option>
+        ${fromAccts}
+      </select>
+      <select id="tx-to-acct" class="cat" style="width:150px;">
+        <option value="">-- To Bank --</option>
+        ${toAccts}
+      </select>
+    `;
+  } else if (txType === "Withdrawal") {
+    const fromAccts = (state.accounts || []).filter(a=>a.type==="Debit").map(a => `<option value="${a.id}" ${a.id === selectedAcctId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    const toCash = (state.accounts || []).filter(a=>a.type==="Cash").map(a => `<option value="${a.id}" ${a.id === selectedTargetId ? 'selected' : ''}>${a.name} (${a.type})</option>`).join("");
+    container.innerHTML = `
+      <select id="tx-from-acct" class="cat" style="width:150px;">
+        <option value="">-- From Bank --</option>
+        ${fromAccts}
+      </select>
+      <select id="tx-to-cash" class="cat" style="width:150px;">
+        <option value="">-- To Cash --</option>
+        ${toCash}
       </select>
     `;
   } else {
@@ -2546,7 +2588,7 @@ function editTransaction(id) {
   
   let pType = tx.paymentType || (tx.creditCardId ? "Credit" : "Debit");
   let aId = tx.accountId || tx.creditCardId || "";
-  let targetId = tx.creditCardId || tx.debtId || "";
+  let targetId = tx.targetAccountId || tx.creditCardId || tx.debtId || "";
   syncTxAccounts(pType, aId, targetId);
   
   if (tx.type === "CC Payment") {
@@ -2555,6 +2597,12 @@ function editTransaction(id) {
   } else if (tx.type === "Debt Payment") {
     if (document.getElementById("tx-from-acct")) document.getElementById("tx-from-acct").value = tx.accountId || "";
     if (document.getElementById("tx-to-debt")) document.getElementById("tx-to-debt").value = tx.debtId || "";
+  } else if (tx.type === "Transfer") {
+    if (document.getElementById("tx-from-acct")) document.getElementById("tx-from-acct").value = tx.accountId || "";
+    if (document.getElementById("tx-to-acct")) document.getElementById("tx-to-acct").value = tx.targetAccountId || "";
+  } else if (tx.type === "Withdrawal") {
+    if (document.getElementById("tx-from-acct")) document.getElementById("tx-from-acct").value = tx.accountId || "";
+    if (document.getElementById("tx-to-cash")) document.getElementById("tx-to-cash").value = tx.targetAccountId || "";
   }
   
   document.getElementById("tx-amt").value = tx.amount || "";
@@ -2589,6 +2637,18 @@ function cancelEditTx() {
 function applyTxBalance(tx, sign = 1) {
   const amt = (Number(tx.amount) || 0) * sign;
   if (!amt) return;
+
+  if (tx.type === "Transfer" || tx.type === "Withdrawal") {
+    if (tx.accountId && state.accounts) {
+      const source = state.accounts.find(a => a.id === tx.accountId);
+      if (source) { source.balance = (Number(source.balance) || 0) - amt; source.updatedAt = Date.now(); }
+    }
+    if (tx.targetAccountId && state.accounts) {
+      const target = state.accounts.find(a => a.id === tx.targetAccountId);
+      if (target) { target.balance = (Number(target.balance) || 0) + amt; target.updatedAt = Date.now(); }
+    }
+    return;
+  }
 
   if (tx.type === "CC Payment") {
     // 1. Pay down Credit Card
@@ -2656,6 +2716,8 @@ function addTransaction(){
   let creditCardName = "";
   let debtId = "";
   let debtName = "";
+  let targetAccountId = "";
+  let targetAccountName = "";
 
   if (type === "CC Payment") {
     paymentType = "Debit";
@@ -2683,6 +2745,32 @@ function addTransaction(){
       const d = state.debts.find(x => x.id === debtId);
       if (d) debtName = d.name;
     }
+  } else if (type === "Transfer") {
+    paymentType = "Debit";
+    accountId = document.getElementById("tx-from-acct") ? document.getElementById("tx-from-acct").value : "";
+    targetAccountId = document.getElementById("tx-to-acct") ? document.getElementById("tx-to-acct").value : "";
+    
+    if (accountId && state.accounts) {
+      const a = state.accounts.find(x => x.id === accountId);
+      if (a) { accountName = a.name; paymentType = a.type; }
+    }
+    if (targetAccountId && state.accounts) {
+      const a = state.accounts.find(x => x.id === targetAccountId);
+      if (a) targetAccountName = a.name;
+    }
+  } else if (type === "Withdrawal") {
+    paymentType = "Debit";
+    accountId = document.getElementById("tx-from-acct") ? document.getElementById("tx-from-acct").value : "";
+    targetAccountId = document.getElementById("tx-to-cash") ? document.getElementById("tx-to-cash").value : "";
+    
+    if (accountId && state.accounts) {
+      const a = state.accounts.find(x => x.id === accountId);
+      if (a) { accountName = a.name; paymentType = a.type; }
+    }
+    if (targetAccountId && state.accounts) {
+      const a = state.accounts.find(x => x.id === targetAccountId);
+      if (a) targetAccountName = a.name;
+    }
   } else {
     paymentType = document.getElementById("tx-acct-type") ? document.getElementById("tx-acct-type").value : "Debit";
     accountId = document.getElementById("tx-acct-id") ? document.getElementById("tx-acct-id").value : "";
@@ -2709,12 +2797,13 @@ function addTransaction(){
       tx.paymentType = paymentType; tx.accountId = accountId; tx.accountName = accountName;
       tx.creditCardId = creditCardId; tx.creditCardName = creditCardName;
       tx.debtId = debtId; tx.debtName = debtName;
+      tx.targetAccountId = targetAccountId; tx.targetAccountName = targetAccountName;
       tx.updatedAt = Date.now();
       applyTxBalance(tx, 1); // Apply new effect
     }
     editingTxId = null;
   } else {
-    const newTx = {id:uid(), date, description, category, type, amount, paymentType, accountId, accountName, creditCardId, creditCardName, debtId, debtName, updatedAt: Date.now()};
+    const newTx = {id:uid(), date, description, category, type, amount, paymentType, accountId, accountName, creditCardId, creditCardName, debtId, debtName, targetAccountId, targetAccountName, updatedAt: Date.now()};
     applyTxBalance(newTx, 1);
     state.transactions.push(newTx);
   }
