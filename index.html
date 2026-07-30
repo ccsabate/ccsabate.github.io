@@ -2849,8 +2849,14 @@ function renderBudget(){
         ondragenter="event.preventDefault()" 
         ondrop="handleDrop(event)" 
         ondragend="handleDragEnd(event)" 
-        style="cursor: grab;">
-      <td class="text"><span style="color:var(--muted); margin-right:6px; cursor:grab;">☰</span> ${c}</td>
+        style="transition: opacity 0.2s;">
+      <td class="text">
+        <span style="color:var(--muted); margin-right:6px; cursor:grab; padding: 10px 14px 10px 0; touch-action: none; user-select: none; -webkit-user-select: none;"
+              ontouchstart="handleTouchStart(event)"
+              ontouchmove="handleTouchMove(event)"
+              ontouchend="handleTouchEnd(event)"
+              ontouchcancel="handleTouchEnd(event)">☰</span> ${c}
+      </td>
       <td class="text">${type}</td>
       <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value); triggerHaptic('light');"></td>
       <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
@@ -2883,7 +2889,7 @@ function renderBudget(){
 
   const actualCashOutflow = totalActualExp - ccExpThisMonth + ccPaidThisMonth;
   
-  // UPDATED: Subtracts Deferred Cash (ccExpThisMonth) from the Budgeted Net Cash Flow
+  // Subtracts Deferred Cash (ccExpThisMonth) from the Budgeted Net Cash Flow
   const netB = totalBudgetInc - totalBudgetExp - ccExpThisMonth;
   const netA = totalActualInc - actualCashOutflow;
 
@@ -3703,35 +3709,24 @@ document.addEventListener("click", (e) => {
 
 /* ============================= DRAG & DROP REORDERING ============================= */
 let draggedRow = null;
+let touchDraggedRow = null;
 
 function handleDragStart(e) {
   draggedRow = e.currentTarget;
   e.dataTransfer.effectAllowed = 'move';
-  
-  // Use a slight delay so the drag "ghost" image remains fully opaque, while the original row turns transparent
-  setTimeout(() => {
-    if (draggedRow) draggedRow.style.opacity = '0.3';
-  }, 0);
-  
+  setTimeout(() => { if (draggedRow) draggedRow.style.opacity = '0.3'; }, 0);
   triggerHaptic('light');
 }
 
 function handleDragOver(e) {
-  e.preventDefault(); // Necessary to allow dropping
+  e.preventDefault(); 
   e.dataTransfer.dropEffect = 'move';
-  
-  // Find the row we are currently hovering over
   const targetRow = e.target.closest('tr[data-cat]');
   if (!targetRow || targetRow === draggedRow) return;
-
-  // Prevent mixing income and expense rows visually
   if (draggedRow.dataset.type !== targetRow.dataset.type) return;
 
   const rect = targetRow.getBoundingClientRect();
   const offset = e.clientY - rect.top;
-  
-  // Instantly swap positions in the DOM: 
-  // If the cursor is past the halfway point of the target row, place it after; otherwise, before
   if (offset > rect.height / 2) {
     targetRow.parentNode.insertBefore(draggedRow, targetRow.nextSibling);
   } else {
@@ -3741,31 +3736,62 @@ function handleDragOver(e) {
 
 function handleDrop(e) {
   e.preventDefault();
-  // Most logic is now cleanly executed in handleDragEnd since the visual layout already updated.
 }
 
 function handleDragEnd(e) {
   if (!draggedRow) return;
-  
   draggedRow.style.opacity = '1';
+  finalizeRowOrder(draggedRow.parentNode);
+  draggedRow = null;
+}
+
+/* Touch-specific handlers for mobile devices */
+function handleTouchStart(e) {
+  touchDraggedRow = e.target.closest('tr[data-cat]');
+  if (!touchDraggedRow) return;
+  touchDraggedRow.style.opacity = '0.4';
+  triggerHaptic('light');
+}
+
+function handleTouchMove(e) {
+  if (!touchDraggedRow) return;
+  e.preventDefault(); // Stop scrolling while dragging the handle
   
-  // Rebuild the state categories arrays directly from the new physical DOM order
-  const tbody = draggedRow.parentNode;
+  const touch = e.touches[0];
+  const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!elem) return;
+  
+  const targetRow = elem.closest('tr[data-cat]');
+  if (!targetRow || targetRow === touchDraggedRow) return;
+  if (touchDraggedRow.dataset.type !== targetRow.dataset.type) return;
+
+  const rect = targetRow.getBoundingClientRect();
+  const offset = touch.clientY - rect.top;
+  
+  if (offset > rect.height / 2) {
+    targetRow.parentNode.insertBefore(touchDraggedRow, targetRow.nextSibling);
+  } else {
+    targetRow.parentNode.insertBefore(touchDraggedRow, targetRow);
+  }
+}
+
+function handleTouchEnd(e) {
+  if (!touchDraggedRow) return;
+  touchDraggedRow.style.opacity = '1';
+  finalizeRowOrder(touchDraggedRow.parentNode);
+  touchDraggedRow = null;
+}
+
+function finalizeRowOrder(tbody) {
   const allRows = Array.from(tbody.querySelectorAll('tr[data-cat]'));
-  
   state.categories.income = [];
   state.categories.expense = [];
-  
   allRows.forEach(row => {
     const cat = row.dataset.cat;
     const type = row.dataset.type;
     if (type === "Income") state.categories.income.push(cat);
     if (type === "Expense") state.categories.expense.push(cat);
   });
-
-  draggedRow = null;
-  
-  // Save changes and force a re-render to secure all bindings and inputs
   saveDataState();
   render();
   triggerHaptic('medium');
