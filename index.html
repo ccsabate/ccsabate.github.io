@@ -2752,9 +2752,16 @@ function renderBudget(){
     const diff = budgeted - actual;
     const usedPct = budgeted ? Math.min(200,(actual/budgeted*100)) : (actual>0?100:0);
     if (type==="Income"){ totalBudgetInc+=budgeted; totalActualInc+=actual; } else { totalBudgetExp+=budgeted; totalActualExp+=actual; }
+    
     return `
-    <tr>
-      <td class="text">${c}</td>
+    <tr draggable="true" data-cat="${c}" data-type="${type}" 
+        ondragstart="handleDragStart(event)" 
+        ondragover="handleDragOver(event)" 
+        ondragenter="event.preventDefault()" 
+        ondrop="handleDrop(event)" 
+        ondragend="handleDragEnd(event)" 
+        style="cursor: grab;">
+      <td class="text"><span style="color:var(--muted); margin-right:6px; cursor:grab;">☰</span> ${c}</td>
       <td class="text">${type}</td>
       <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value); triggerHaptic('light');"></td>
       <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
@@ -2786,7 +2793,9 @@ function renderBudget(){
   }, 0);
 
   const actualCashOutflow = totalActualExp - ccExpThisMonth + ccPaidThisMonth;
-  const netB = totalBudgetInc - totalBudgetExp;
+  
+  // UPDATED: Subtracts Deferred Cash (ccExpThisMonth) from the Budgeted Net Cash Flow
+  const netB = totalBudgetInc - totalBudgetExp - ccExpThisMonth;
   const netA = totalActualInc - actualCashOutflow;
 
   return `
@@ -3602,6 +3611,76 @@ document.addEventListener("click", (e) => {
     }
   }
 });
+
+/* ============================= DRAG & DROP REORDERING ============================= */
+let draggedRow = null;
+
+function handleDragStart(e) {
+  draggedRow = e.currentTarget;
+  e.dataTransfer.effectAllowed = 'move';
+  
+  // Use a slight delay so the drag "ghost" image remains fully opaque, while the original row turns transparent
+  setTimeout(() => {
+    if (draggedRow) draggedRow.style.opacity = '0.3';
+  }, 0);
+  
+  triggerHaptic('light');
+}
+
+function handleDragOver(e) {
+  e.preventDefault(); // Necessary to allow dropping
+  e.dataTransfer.dropEffect = 'move';
+  
+  // Find the row we are currently hovering over
+  const targetRow = e.target.closest('tr[data-cat]');
+  if (!targetRow || targetRow === draggedRow) return;
+
+  // Prevent mixing income and expense rows visually
+  if (draggedRow.dataset.type !== targetRow.dataset.type) return;
+
+  const rect = targetRow.getBoundingClientRect();
+  const offset = e.clientY - rect.top;
+  
+  // Instantly swap positions in the DOM: 
+  // If the cursor is past the halfway point of the target row, place it after; otherwise, before
+  if (offset > rect.height / 2) {
+    targetRow.parentNode.insertBefore(draggedRow, targetRow.nextSibling);
+  } else {
+    targetRow.parentNode.insertBefore(draggedRow, targetRow);
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  // Most logic is now cleanly executed in handleDragEnd since the visual layout already updated.
+}
+
+function handleDragEnd(e) {
+  if (!draggedRow) return;
+  
+  draggedRow.style.opacity = '1';
+  
+  // Rebuild the state categories arrays directly from the new physical DOM order
+  const tbody = draggedRow.parentNode;
+  const allRows = Array.from(tbody.querySelectorAll('tr[data-cat]'));
+  
+  state.categories.income = [];
+  state.categories.expense = [];
+  
+  allRows.forEach(row => {
+    const cat = row.dataset.cat;
+    const type = row.dataset.type;
+    if (type === "Income") state.categories.income.push(cat);
+    if (type === "Expense") state.categories.expense.push(cat);
+  });
+
+  draggedRow = null;
+  
+  // Save changes and force a re-render to secure all bindings and inputs
+  saveDataState();
+  render();
+  triggerHaptic('medium');
+}
 
 if (window.Capacitor && window.Capacitor.Plugins) {
   try {
