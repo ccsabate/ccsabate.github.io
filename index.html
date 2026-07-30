@@ -1238,6 +1238,7 @@ let isDirty = false; // Prevents idle wakeup events from accidentally pushing st
 let editingTxId = null; // Tracks inline editing state on the Transactions tab
 let activeEditId = null; // Tracks inline editing across other tabs (Savings, Accounts, Debts, NetWorth)
 let editingSection = null; // Tracks section editing (EmergencyFund, Categories)
+let isBudgetSortMode = false; // Tracks if Budget table is currently draggable
 
 function defaultState(){
   return {
@@ -2175,6 +2176,7 @@ function switchTab(id){
   editingTxId = null; // Reset edit state when switching tabs
   activeEditId = null; // Reset inline editing state
   editingSection = null; // Reset section editing state
+  isBudgetSortMode = false; // Reset sort mode on tab switch
   state.activeTab = id; 
   saveUIState(); // Save locally without touching cloud!
   window.scrollTo(0,0); 
@@ -2842,23 +2844,19 @@ function renderBudget(){
     const usedPct = budgeted ? Math.min(200,(actual/budgeted*100)) : (actual>0?100:0);
     if (type==="Income"){ totalBudgetInc+=budgeted; totalActualInc+=actual; } else { totalBudgetExp+=budgeted; totalActualExp+=actual; }
     
+    let dragAttrs = "";
+    let handleSpan = "";
+    
+    if (isBudgetSortMode) {
+      dragAttrs = `draggable="true" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragenter="event.preventDefault()" ondrop="handleDrop(event)" ondragend="handleDragEnd(event)" style="transition: opacity 0.2s; cursor: grab;"`;
+      handleSpan = `<span style="color:var(--muted); margin-right:6px; cursor:grab; padding: 10px 14px 10px 0; touch-action: none; user-select: none; -webkit-user-select: none;" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" ontouchcancel="handleTouchEnd(event)">☰</span>`;
+    }
+
     return `
-    <tr draggable="true" data-cat="${c}" data-type="${type}" 
-        ondragstart="handleDragStart(event)" 
-        ondragover="handleDragOver(event)" 
-        ondragenter="event.preventDefault()" 
-        ondrop="handleDrop(event)" 
-        ondragend="handleDragEnd(event)" 
-        style="transition: opacity 0.2s;">
-      <td class="text">
-        <span style="color:var(--muted); margin-right:6px; cursor:grab; padding: 10px 14px 10px 0; touch-action: none; user-select: none; -webkit-user-select: none;"
-              ontouchstart="handleTouchStart(event)"
-              ontouchmove="handleTouchMove(event)"
-              ontouchend="handleTouchEnd(event)"
-              ontouchcancel="handleTouchEnd(event)">☰</span> ${c}
-      </td>
+    <tr data-cat="${c}" data-type="${type}" ${dragAttrs}>
+      <td class="text">${handleSpan}${c}</td>
       <td class="text">${type}</td>
-      <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value); triggerHaptic('light');"></td>
+      <td><input type="number" value="${budgeted}" onchange="setBudget('${c}', this.value); triggerHaptic('light');" ${isBudgetSortMode ? 'disabled' : ''}></td>
       <td class="${type==='Income'?'amt-pos':'amt-neg'}">${fmt(actual)}</td>
       <td class="${diff<0 ? 'amt-neg' : 'amt-pos'}">${fmt(diff)}</td>
       <td>
@@ -2909,7 +2907,10 @@ function renderBudget(){
     </div>
   </div>
   <div class="section">
-    <div class="section-title">${monthNames[month-1]} ${year}</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div class="section-title" style="margin-bottom:0;">${monthNames[month-1]} ${year}</div>
+      <button class="btn secondary" style="padding:4px 10px;min-height:32px;display:inline-flex;align-items:center;" onclick="isBudgetSortMode = !isBudgetSortMode; render(); triggerHaptic('light');">${isBudgetSortMode ? 'Done' : '↕ Reorder'}</button>
+    </div>
     <div class="table-wrap">
     <table>
       <thead><tr><th>Category</th><th>Type</th><th>Budgeted</th><th>Actual</th><th>Difference</th><th>% of Budget</th></tr></thead>
@@ -3712,6 +3713,7 @@ let draggedRow = null;
 let touchDraggedRow = null;
 
 function handleDragStart(e) {
+  if (!isBudgetSortMode) return;
   draggedRow = e.currentTarget;
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => { if (draggedRow) draggedRow.style.opacity = '0.3'; }, 0);
@@ -3719,6 +3721,7 @@ function handleDragStart(e) {
 }
 
 function handleDragOver(e) {
+  if (!isBudgetSortMode) return;
   e.preventDefault(); 
   e.dataTransfer.dropEffect = 'move';
   const targetRow = e.target.closest('tr[data-cat]');
@@ -3735,6 +3738,7 @@ function handleDragOver(e) {
 }
 
 function handleDrop(e) {
+  if (!isBudgetSortMode) return;
   e.preventDefault();
 }
 
@@ -3747,6 +3751,7 @@ function handleDragEnd(e) {
 
 /* Touch-specific handlers for mobile devices */
 function handleTouchStart(e) {
+  if (!isBudgetSortMode) return;
   touchDraggedRow = e.target.closest('tr[data-cat]');
   if (!touchDraggedRow) return;
   touchDraggedRow.style.opacity = '0.4';
@@ -3754,7 +3759,7 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-  if (!touchDraggedRow) return;
+  if (!touchDraggedRow || !isBudgetSortMode) return;
   e.preventDefault(); // Stop scrolling while dragging the handle
   
   const touch = e.touches[0];
@@ -3776,7 +3781,7 @@ function handleTouchMove(e) {
 }
 
 function handleTouchEnd(e) {
-  if (!touchDraggedRow) return;
+  if (!touchDraggedRow || !isBudgetSortMode) return;
   touchDraggedRow.style.opacity = '1';
   finalizeRowOrder(touchDraggedRow.parentNode);
   touchDraggedRow = null;
