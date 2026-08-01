@@ -1773,7 +1773,15 @@ function loadState(){
   try {
     const localData = localStorage.getItem(STORAGE_KEY);
     if (localData) {
-      state = Object.assign(defaultState(), JSON.parse(localData));
+      const parsed = JSON.parse(localData);
+      state = Object.assign(defaultState(), parsed);
+      
+      const d = new Date();
+      state.dashboardMonth = d.getMonth() + 1;
+      state.dashboardYear = d.getFullYear();
+      state.budgetMonth = d.getMonth() + 1;
+      state.budgetYear = d.getFullYear();
+      
       migrateEmergencyFund();
     }
   } catch(e) {}
@@ -2738,6 +2746,12 @@ function addTransaction(){
     applyTxBalance(newTx, 1);
     state.transactions.push(newTx);
   }
+
+  const txD = new Date(date + "T00:00:00");
+  state.dashboardMonth = txD.getMonth() + 1;
+  state.dashboardYear = txD.getFullYear();
+  state.budgetMonth = txD.getMonth() + 1;
+  state.budgetYear = txD.getFullYear();
 
   saveDataState(); 
   render();
