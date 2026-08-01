@@ -74,51 +74,8 @@
   --radius-sm: 14px;
 }
 
-/* ---------- Forced Dark Mode ---------- */
-:root.theme-dark {
-  --paper: #0D110F;
-  --card: rgba(45, 55, 50, 0.25);
-  --card-hover: rgba(45, 55, 50, 0.35);
-  --ledger: #76A88A;
-  --ledger-light: #527A62;
-  --gold: #D4A842;
-  --gold-soft: rgba(212, 168, 66, 0.15);
-  --brick: #E26D57;
-  --brick-soft: rgba(226, 109, 87, 0.15);
-  --ink: #EAE8DF;
-  --muted: #8B8E81;
-  --line: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(28, 36, 30, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.03); 
-  --glass-blur: blur(12px) saturate(180%);
-  --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  --card-shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  --sidebar-bg: rgba(18, 24, 20, 0.45); 
-  --sidebar-shadow: 1px 0 32px rgba(0, 0, 0, 0.4), inset -1px 0 0 rgba(255, 255, 255, 0.04), inset 1px 0 1px rgba(255, 255, 255, 0.08);
-  --sidebar-text: #EAE8DF;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
-  --nav-hover: rgba(255, 255, 255, 0.08);
-  --nav-active-text: #0D110F;
-  --btn-primary-bg: var(--ledger);
-  --btn-primary-text: #0D110F;
-  --btn-secondary-bg: rgba(255, 255, 255, 0.06);
-  --btn-secondary-border: rgba(255, 255, 255, 0.15);
-  --input-bg: rgba(0, 0, 0, 0.25);
-  --input-border: rgba(255, 255, 255, 0.15);
-  --kpi-shadow: transparent;
-  --table-foot-bg: rgba(255, 255, 255, 0.05);
-  --tag-bg: rgba(255, 255, 255, 0.08);
-  --mobile-chrome-bg: rgba(18, 24, 20, 0.7);
-  --mobile-chrome-border: rgba(255, 255, 255, 0.1);
-  --overlay-bg: rgba(0, 0, 0, 0.7);
-  --toast-bg: rgba(45, 60, 50, 0.9);
-  --toast-text: #EAE8DF;
-  --menu-bg: rgba(28, 36, 30, 0.85);
-  --menu-group-bg: rgba(255, 255, 255, 0.08);
-  --menu-cancel-bg: rgba(45, 60, 50, 0.9);
-}
-
-/* ---------- System Dark Mode ---------- */
+/* ---------- Forced & System Dark Mode (Consolidated) ---------- */
+:root.theme-dark,
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
     --paper: #0D110F;
@@ -218,7 +175,6 @@ input, select, textarea {
   touch-action: pan-y;
 }
 
-/* Prevent text wrapping globally across all sidebar elements so they never push below */
 .sidebar, .brand-title, .brand-sub, .nav-btn, .nav-text, .save-indicator, .more-btn {
   white-space: nowrap !important;
   overflow: hidden;
@@ -238,7 +194,6 @@ input, select, textarea {
 }
 .brand-sub { font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: rgba(243,239,225,0.6); font-weight: 500; margin-top: 4px; text-overflow: ellipsis; }
 
-/* Smooth Title <-> Logo transition */
 .full-text {
   display: inline-block;
   opacity: 1;
@@ -265,7 +220,6 @@ input, select, textarea {
 }
 .hamburger:hover { background: rgba(255,255,255,0.12); }
 
-/* Collapsed Sidebar State - Mathematical Centering Enforced */
 .sidebar.collapsed { width: 78px; }
 .sidebar.collapsed .brand-header {
   flex-direction: column-reverse; align-items: center; justify-content: center;
@@ -328,7 +282,6 @@ input, select, textarea {
 }
 .sidebar.collapsed .more-btn svg { margin: 0; }
 
-/* Navigation Buttons - Independent Scrollable Pane */
 .nav {
   display: flex;
   flex-direction: column;
@@ -337,7 +290,7 @@ input, select, textarea {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0; /* REQUIRED for CSS flexbox child overflow scrolling */
+  min-height: 0;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
@@ -352,7 +305,7 @@ input, select, textarea {
   text-align: left; cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 44px;
-  flex-shrink: 0; /* Guarantee buttons never get squished when viewport shrinks */
+  flex-shrink: 0;
 }
 .nav-btn:hover { background: var(--nav-hover); border-color: rgba(255,255,255,0.15); }
 .nav-btn:active { transform: scale(0.96); }
@@ -384,7 +337,7 @@ input, select, textarea {
 .main {
   flex: 1; padding: 36px 44px; max-width: 1200px;
   margin-left: 78px;
-  min-width: 0; /* Prevents wide child tables from breaking flex layout width */
+  min-width: 0;
   width: calc(100% - 78px);
 }
 
@@ -397,7 +350,6 @@ input, select, textarea {
 .page-desc { color: var(--muted); font-size: 13px; margin-top: 6px; max-width: 540px; line-height: 1.45; }
 .controls { display: flex; gap: 10px; align-items: center; }
 
-/* iOS Controls & Inputs */
 select, input[type=text], input[type=number], input[type=date] {
   font-family: 'Inter', sans-serif; font-size: 14px;
   padding: 10px 14px;
@@ -435,7 +387,6 @@ input[type="date"] {
 }
 input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 
-/* iOS Tactile Buttons */
 .btn {
   font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
   padding: 10px 18px;
@@ -475,7 +426,6 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 }
 .btn.danger:hover { background: var(--brick-soft); }
 
-/* Minimalist Circular Table Action Buttons */
 .btn-action {
   width: 34px !important;
   height: 34px !important;
@@ -599,7 +549,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 .add-row .amt { width: 100px; }
 .add-row .short { width: 100px; }
 
-/* Smooth Slide for TX form */
 #add-tx-form {
   max-height: 0; opacity: 0; overflow: hidden;
   margin-top: 0; padding-top: 0; border-top: none;
@@ -650,7 +599,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
 .empty-msg { color: var(--muted); font-size: 13px; font-style: italic; padding: 14px 4px; }
 .small-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
 
-/* ---------- Mobile App Glass Header (With Safe Area Insets) ---------- */
 .mobile-header {
   display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 60;
   height: calc(64px + env(safe-area-inset-top));
@@ -718,7 +666,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   .add-row .btn { border-radius: var(--radius-sm) !important; justify-content: center; }
 
-  /* iOS 26 Minimize to Top-Right Corner & Compact 50x50 Pill Size */
   .mobile-header.minimized {
     top: calc(12px + env(safe-area-inset-top)) !important;
     left: calc(100% - 66px) !important;
@@ -749,7 +696,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     border-radius: 0 !important;
   }
 
-  /* iOS 26 Dynamic Floating Liquid Glass Tab Bar */
   .mobile-tabbar {
     display: flex; position: fixed;
     left: 14px; width: calc(100% - 28px); height: 60px;
@@ -773,7 +719,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   :root.theme-light .mobile-tabbar { box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.25) inset; }
   
-  /* iOS 26 Minimize to Bottom-Left Corner & Compact 50x50 Pill Size */
   .mobile-tabbar.minimized {
     left: 16px !important;
     right: auto !important;
@@ -820,7 +765,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     pointer-events: none;
   }
     
-  /* iOS 26 Asymmetric Liquid Morph Selection Pill */
   .tab-indicator {
     position: absolute; top: 6px; bottom: 6px; left: 6px;
     width: calc((100% - 12px) / 7);
@@ -837,7 +781,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   }
   :root.theme-light .tab-indicator { box-shadow: 0 4px 14px rgba(184,144,46,0.45), 0 1px 0 rgba(255,255,255,0.5) inset; }
 
-  /* Lock tab button flexbox to dead-center */
   .mobile-tabbar .nav-btn {
     position: relative; z-index: 2; flex: 1 1 0%; 
     display: flex !important; flex-direction: row !important;
@@ -855,7 +798,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
     background: transparent !important; border-color: transparent !important; box-shadow: none !important;
   }
   
-  /* iOS 26 Zoom Transition & Spring Pop on Active Icon */
   .mobile-tabbar .nav-btn .nav-icon {
     width: 24px !important; height: 24px !important;
     display: flex !important; align-items: center !important; justify-content: center !important;
@@ -875,7 +817,6 @@ td input:focus, td select:focus { border-color: var(--gold); background: var(--c
   .mobile-tabbar .nav-btn span:not(.nav-icon) { display: none; }
   .mobile-tabbar .nav-btn.active { color: var(--nav-active-text); }
   
-  /* Lift toast above floating tabbar on mobile */
   .toast {
     bottom: calc(88px + env(safe-area-inset-bottom)) !important;
   }
@@ -1234,11 +1175,11 @@ const STORAGE_KEY = "finance_tracker_state_v1";
 const uid = () => Math.random().toString(36).slice(2,10);
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-let isDirty = false; // Prevents idle wakeup events from accidentally pushing stale memory
-let editingTxId = null; // Tracks inline editing state on the Transactions tab
-let activeEditId = null; // Tracks inline editing across other tabs (Savings, Accounts, Debts, NetWorth)
-let editingSection = null; // Tracks section editing (EmergencyFund, Categories)
-let isBudgetSortMode = false; // Tracks if Budget table is currently draggable
+let isDirty = false;
+let editingTxId = null;
+let activeEditId = null;
+let editingSection = null;
+let isBudgetSortMode = false;
 
 function defaultState(){
   return {
@@ -1297,11 +1238,7 @@ function setThemePreference(mode) {
 function updateThemeUI() {
   const mode = localStorage.getItem('ledger_theme_pref') || 'system';
   document.querySelectorAll('.theme-btn').forEach(btn => {
-    if (btn.dataset.theme === mode) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+    btn.classList.toggle('active', btn.dataset.theme === mode);
   });
 }
 
@@ -1392,7 +1329,6 @@ async function connectExisting(){
     if (!snap.exists){ showConnectError("No tracker found with that code — double-check it."); triggerHaptic('heavy'); return; }
     localStorage.setItem(SYNC_CODE_KEY, code);
     
-    // Protect local UI tab view so setup doesn't yank you away!
     const currentTab = state.activeTab || "dashboard";
     const currentShowCC = state.showCCBreakdown || false;
     const currentShowAcct = state.showAccountBreakdown || false;
@@ -1429,16 +1365,13 @@ function connectToCode(code){
   updateSaveIndicator();
 }
 
-/* Atomic Union Merger: Merges financial data without touching UI view properties */
 function mergeFinancialData(serverData, localData) {
   if (!serverData) return localData;
   const merged = Object.assign({}, serverData);
   
-  // Combine all deleted tombstones
   const allDeleted = new Set([...(serverData.deletedIds || []), ...(localData.deletedIds || [])]);
   merged.deletedIds = Array.from(allDeleted).slice(-300);
 
-  // Helper to cleanly union arrays by unique ID
   const mergeArr = (serverArr = [], localArr = []) => {
     const map = new Map();
     serverArr.forEach(item => {
@@ -1448,13 +1381,11 @@ function mergeFinancialData(serverData, localData) {
       if (!item || !item.id || allDeleted.has(item.id)) return;
       const existing = map.get(item.id);
       if (!existing) {
-        map.set(item.id, item); // Keep newly created offline entry!
+        map.set(item.id, item);
       } else {
         const serverTime = existing.updatedAt || 0;
         const localTime = item.updatedAt || 0;
-        if (localTime > serverTime) {
-          map.set(item.id, item); // Keep whichever edit was made most recently
-        }
+        if (localTime > serverTime) map.set(item.id, item);
       }
     });
     return Array.from(map.values());
@@ -1472,7 +1403,6 @@ function mergeFinancialData(serverData, localData) {
     expense: Array.from(new Set([...(serverData.categories?.expense||[]), ...(localData.categories?.expense||[])]))
   };
 
-  // For object dictionaries, take whichever device performed a data edit more recently
   if ((localData.lastDataEdit || 0) > (serverData.lastDataEdit || 0)) {
     merged.budgets = Object.assign({}, serverData.budgets, localData.budgets);
     merged.emergencyFund = Object.assign({}, serverData.emergencyFund, localData.emergencyFund);
@@ -1505,7 +1435,6 @@ function subscribeToDoc(){
     const json = JSON.stringify(preparePayload(remoteData));
     if (json === lastPushedJSON) return;
 
-    // Snapshot this device's current UI navigation tab and date filters!
     const uiPreserved = {
       activeTab: state.activeTab,
       showCCBreakdown: state.showCCBreakdown,
@@ -1517,10 +1446,8 @@ function subscribeToDoc(){
     };
 
     if (!isDirty) {
-      // Clean idle device: safely accept remote server data!
       state = Object.assign(defaultState(), remoteData, uiPreserved);
     } else {
-      // Local offline edits exist: run intelligent atomic merge!
       const merged = mergeFinancialData(remoteData, state);
       state = Object.assign(defaultState(), merged, uiPreserved);
       commitSave(false, true);
@@ -1864,12 +1791,10 @@ function loadState(){
   }, 50);
 }
 
-/* UI-Only Save: Saves local tab and month filters without dirtying cloud data */
 function saveUIState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
 }
 
-/* Financial Data Save: Marks device dirty and triggers atomic cloud merge */
 let saveTimer = null;
 function saveDataState(){
   state.lastDataEdit = Date.now();
@@ -1902,7 +1827,6 @@ function commitSave(showToast, force = false){
     return;
   }
 
-  // CRITICAL GUARD: Prevent idle devices from pushing stale memory when waking up!
   if (!isDirty && !force) return;
 
   const preparePayload = (baseData) => {
@@ -1919,7 +1843,6 @@ function commitSave(showToast, force = false){
 
   const docRefPtr = docRef(syncCode);
 
-  // ATOMIC SERVER MERGE TRANSACTION: Reads latest cloud data right before writing!
   db.runTransaction(async (transaction) => {
     const doc = await transaction.get(docRefPtr);
     const serverData = doc.exists ? doc.data() : null;
@@ -2020,42 +1943,30 @@ function fmt(n){
 }
 function pct(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:1}) + "%"; }
 
-function txSum(category, type, month, year){
-  return state.transactions.reduce((sum,t)=>{
-    const d = new Date(t.date+"T00:00:00");
-    if (t.category===category && (t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getMonth()+1===month && d.getFullYear()===year){
-      return sum + Number(t.amount||0);
-    }
-    return sum;
-  },0);
+/* Single consolidated transaction summation helper */
+function getTxSum({ category, type, month, year }) {
+  return state.transactions.reduce((sum, t) => {
+    const d = new Date(t.date + "T00:00:00");
+    const matchCat = !category || t.category === category;
+    const matchType = t.type === type || (type === "Expense" && t.type === "Debt Payment");
+    const matchMonth = !month || (d.getMonth() + 1 === month);
+    const matchYear = !year || (d.getFullYear() === year);
+    return (matchCat && matchType && matchMonth && matchYear) ? sum + Number(t.amount || 0) : sum;
+  }, 0);
 }
-function ytdSum(type, year){
-  return state.transactions.reduce((sum,t)=>{
-    const d = new Date(t.date+"T00:00:00");
-    if ((t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getFullYear()===year){ return sum + Number(t.amount||0); }
-    return sum;
-  },0);
-}
-function monthSum(type, month, year){
-  return state.transactions.reduce((sum,t)=>{
-    const d = new Date(t.date+"T00:00:00");
-    if ((t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getMonth()+1===month && d.getFullYear()===year){ return sum + Number(t.amount||0); }
-    return sum;
-  },0);
-}
-function categoryYearSum(category, type, year){
-  return state.transactions.reduce((sum,t)=>{
-    const d = new Date(t.date+"T00:00:00");
-    if (t.category===category && (t.type===type || (type==="Expense" && t.type==="Debt Payment")) && d.getFullYear()===year){ return sum + Number(t.amount||0); }
-    return sum;
-  },0);
-}
+
+const txSum = (category, type, month, year) => getTxSum({ category, type, month, year });
+const ytdSum = (type, year) => getTxSum({ type, year });
+const monthSum = (type, month, year) => getTxSum({ type, month, year });
+const categoryYearSum = (category, type, year) => getTxSum({ category, type, year });
+
 function allCategories(){ return [...state.categories.income, ...state.categories.expense]; }
 function netWorthTotal(entry){
   const assets = (+entry.cash||0)+(+entry.investments||0)+(+entry.property||0)+(+entry.otherAssets||0);
   const liabilities = (+entry.creditCards||0)+(+entry.loans||0)+(+entry.mortgage||0)+(+entry.otherLiabilities||0);
   return {assets, liabilities, net: assets-liabilities};
 }
+
 const palette = [
   "var(--ledger)", "var(--gold)", "var(--brick)", "var(--ledger-light)", 
   "#8A7A4E", "#A06B52", "#5A8B74", "#D2B16A", "#C45B46", "#68957A", "#B69F6B", "#8C6A4F", "#4F8268", "#CBA066"
@@ -2079,8 +1990,11 @@ const ICONS = {
   edit: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><path d="M11.5 4.5l4 4L5 19H1v-4L11.5 4.5z"/><path d="M14 2l4 4"/></svg>',
   delete: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><path d="M3 5h14"/><path d="M8 5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/><path d="M5 5v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5"/><line x1="8" y1="9" x2="8" y2="15"/><line x1="12" y1="9" x2="12" y2="15"/></svg>',
   check: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><polyline points="4 10 8 14 16 6"/></svg>',
-  close: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>'
+  close: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>',
+  reorder: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block;"><path d="M13 6l-3-3-3 3"/><path d="M10 3v14"/><path d="M7 14l3 3 3-3"/></svg>',
+  dragHandle: '<svg viewBox="0 0 20 20" fill="currentColor" style="width:16px;height:16px;display:block;"><path d="M3 8h14v1.5H3z"/><path d="M3 11.5h14V13H3z"/></svg>'
 };
+
 const tabs = [
   {id:"dashboard", label:"Dashboard", icon:ICONS.dashboard},
   {id:"transactions", label:"Transactions", icon:ICONS.transactions},
@@ -2090,6 +2004,25 @@ const tabs = [
   {id:"networth", label:"Net Worth", icon:ICONS.networth},
   {id:"categories", label:"Categories", icon:ICONS.categories},
 ];
+
+/* Helper UI button template generators */
+function renderActionBtns(id, onEdit, onDelete) {
+  return `
+    <td style="white-space:nowrap; text-align:right;">
+      <button class="btn secondary btn-action" style="margin-right:4px;" onclick="${onEdit}" title="Edit">${ICONS.edit}</button>
+      <button class="btn danger btn-action" onclick="${onDelete}" title="Delete">${ICONS.delete}</button>
+    </td>
+  `;
+}
+function renderSaveCancelBtns(onSave, onCancel = "activeEditId=null; render(); triggerHaptic('light');") {
+  return `
+    <td style="white-space:nowrap; text-align:right;">
+      <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="${onSave}" title="Save">${ICONS.check}</button>
+      <button class="btn secondary btn-action" onclick="${onCancel}" title="Cancel">${ICONS.close}</button>
+    </td>
+  `;
+}
+
 function renderNav(){
   const nav = document.getElementById("nav");
   nav.innerHTML = tabs.map(t => `
@@ -2143,7 +2076,7 @@ function updateTabIndicator(bar, targetId, animate = true){
   if (!animate) {
     indicator.style.transition = 'none';
     bar.style.setProperty('--idx', idx);
-    bar.offsetHeight; // force reflow
+    bar.offsetHeight;
     indicator.style.transition = '';
   } else {
     bar.style.setProperty('--idx', idx);
@@ -2173,12 +2106,12 @@ function updateTabIndicator(bar, targetId, animate = true){
 
 function switchTab(id){ 
   if (state.activeTab !== id) triggerHaptic('light');
-  editingTxId = null; // Reset edit state when switching tabs
-  activeEditId = null; // Reset inline editing state
-  editingSection = null; // Reset section editing state
-  isBudgetSortMode = false; // Reset sort mode on tab switch
+  editingTxId = null;
+  activeEditId = null;
+  editingSection = null;
+  isBudgetSortMode = false;
   state.activeTab = id; 
-  saveUIState(); // Save locally without touching cloud!
+  saveUIState();
   window.scrollTo(0,0); 
   render(); 
 }
@@ -2409,10 +2342,7 @@ function renderTransactions(){
       <td class="text">${t.category}</td>
       <td class="text" style="font-size:12px;">${methodBadge}</td>
       <td class="${amtClass}" style="${(t.type==='Transfer' || t.type==='Withdrawal')?'color:var(--muted);font-weight:600;':''}">${amtPrefix}${fmt(t.amount)}</td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="editTransaction('${t.id}')" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteTransaction('${t.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(t.id, `editTransaction('${t.id}')`, `deleteTransaction('${t.id}')`)}
     </tr>`;
   }).join("") : `<tr><td colspan="7" class="empty-msg">No transactions yet — add your first one using the button above.</td></tr>`;
 
@@ -2442,7 +2372,6 @@ function renderTransactions(){
       </select>
       <select id="tx-cat" class="cat">${catOptions}</select>
       
-      <!-- Dynamic account selectors managed by syncTxAccounts() -->
       <span id="tx-acct-container" style="display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap;"></span>
       
       <input type="number" id="tx-amt" class="amt" placeholder="Amount" step="0.01">
@@ -2653,12 +2582,10 @@ function applyTxBalance(tx, sign = 1) {
   }
 
   if (tx.type === "CC Payment") {
-    // 1. Pay down Credit Card
     if (tx.creditCardId && state.creditCards) {
       const card = state.creditCards.find(c => c.id === tx.creditCardId);
       if (card) { card.balance = Math.max(0, (Number(card.balance) || 0) - amt); card.updatedAt = Date.now(); }
     }
-    // 2. Deduct from Debit/Cash Bank Account
     if (tx.accountId && state.accounts) {
       const acct = state.accounts.find(a => a.id === tx.accountId);
       if (acct) { acct.balance = (Number(acct.balance) || 0) - amt; acct.updatedAt = Date.now(); }
@@ -2667,12 +2594,10 @@ function applyTxBalance(tx, sign = 1) {
   }
   
   if (tx.type === "Debt Payment") {
-    // 1. Pay down Loan / Term Debt
     if (tx.debtId && state.debts) {
       const debt = state.debts.find(d => d.id === tx.debtId);
       if (debt) { debt.current = Math.max(0, (Number(debt.current) || 0) - amt); debt.updatedAt = Date.now(); }
     }
-    // 2. Deduct from Debit/Cash Bank Account
     if (tx.accountId && state.accounts) {
       const acct = state.accounts.find(a => a.id === tx.accountId);
       if (acct) { acct.balance = (Number(acct.balance) || 0) - amt; acct.updatedAt = Date.now(); }
@@ -2691,7 +2616,6 @@ function applyTxBalance(tx, sign = 1) {
       }
     }
   } else {
-    // Debit or Cash
     const targetId = tx.accountId;
     if (targetId && state.accounts) {
       const acct = state.accounts.find(a => a.id === targetId);
@@ -2794,14 +2718,14 @@ function addTransaction(){
   if (editingTxId) {
     const tx = state.transactions.find(t => t.id === editingTxId);
     if (tx) {
-      applyTxBalance(tx, -1); // Reverse old effect
+      applyTxBalance(tx, -1);
       tx.date = date; tx.description = description; tx.type = type; tx.category = category; tx.amount = amount;
       tx.paymentType = paymentType; tx.accountId = accountId; tx.accountName = accountName;
       tx.creditCardId = creditCardId; tx.creditCardName = creditCardName;
       tx.debtId = debtId; tx.debtName = debtName;
       tx.targetAccountId = targetAccountId; tx.targetAccountName = targetAccountName;
       tx.updatedAt = Date.now();
-      applyTxBalance(tx, 1); // Apply new effect
+      applyTxBalance(tx, 1);
     }
     editingTxId = null;
   } else {
@@ -2814,22 +2738,29 @@ function addTransaction(){
   render();
 }
 
-function deleteTransaction(id){
-  showConfirmAlert(
-    "Delete Transaction",
-    "Are you sure you want to delete this transaction?",
-    () => {
-      if (editingTxId === id) editingTxId = null;
-      const tx = state.transactions.find(t => t.id === id);
-      if (tx) applyTxBalance(tx, -1); // Restore old balance
-      if (!state.deletedIds) state.deletedIds = [];
-      state.deletedIds.push(id);
-      if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-      state.transactions = state.transactions.filter(t=>t.id!==id);
-      saveDataState(); render();
-    }
-  );
+/* Consolidated entity deletion function */
+function deleteEntity(listKey, id, alertTitle, alertMsg) {
+  showConfirmAlert(alertTitle, alertMsg, () => {
+    if (activeEditId === id) activeEditId = null;
+    if (editingTxId === id) editingTxId = null;
+    const tx = state.transactions.find(t => t.id === id);
+    if (listKey === 'transactions' && tx) applyTxBalance(tx, -1);
+    
+    if (!state.deletedIds) state.deletedIds = [];
+    state.deletedIds.push(id);
+    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
+    state[listKey] = state[listKey].filter(x => x.id !== id);
+    saveDataState();
+    render();
+  });
 }
+
+const deleteTransaction = (id) => deleteEntity('transactions', id, "Delete Transaction", "Are you sure you want to delete this transaction?");
+const deleteAccount = (id) => deleteEntity('accounts', id, "Delete Account", "Are you sure you want to delete this account?");
+const deleteCreditCard = (id) => deleteEntity('creditCards', id, "Delete Credit Card", "Are you sure you want to delete this credit card?");
+const deleteDebt = (id) => deleteEntity('debts', id, "Delete Debt", "Are you sure you want to delete this debt entry?");
+const deleteSaving = (id) => deleteEntity('savingsGoals', id, "Delete Goal", "Are you sure you want to delete this savings goal?");
+const deleteNW = (id) => deleteEntity('netWorth', id, "Delete Entry", "Are you sure you want to delete this net worth record?");
 
 /* ============================= BUDGET ============================= */
 function renderBudget(){
@@ -2848,8 +2779,8 @@ function renderBudget(){
     let handleSpan = "";
     
     if (isBudgetSortMode) {
-      dragAttrs = `draggable="true" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragenter="event.preventDefault()" ondrop="handleDrop(event)" ondragend="handleDragEnd(event)" style="transition: opacity 0.2s; cursor: grab;"`;
-      handleSpan = `<span style="color:var(--muted); margin-right:6px; cursor:grab; padding: 10px 14px 10px 0; touch-action: none; user-select: none; -webkit-user-select: none;" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" ontouchcancel="handleTouchEnd(event)">☰</span>`;
+      dragAttrs = `draggable="true" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragenter="event.preventDefault()" ondrop="handleDrop(event)" ondragend="handleDragEnd(event)" style="transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); cursor: grab;"`;
+      handleSpan = `<span style="color:var(--muted); margin-right:12px; cursor:grab; padding: 10px 0; touch-action: none; user-select: none; -webkit-user-select: none; display:inline-flex; align-items:center; opacity:0.5; transition:opacity 0.2s;" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" ontouchcancel="handleTouchEnd(event)">${ICONS.dragHandle}</span>`;
     }
 
     return `
@@ -2868,7 +2799,6 @@ function renderBudget(){
     </tr>`;
   }).join("");
 
-  // Reconcile Credit Card Swipes (Deferred Cash) vs CC Payments (Actual Cash Out)
   const ccExpThisMonth = state.transactions.reduce((sum, t) => {
     const d = new Date(t.date + "T00:00:00");
     if (t.type === "Expense" && (t.paymentType === "Credit" || t.creditCardId) && d.getMonth() + 1 === month && d.getFullYear() === year) {
@@ -2887,8 +2817,7 @@ function renderBudget(){
 
   const actualCashOutflow = totalActualExp - ccExpThisMonth + ccPaidThisMonth;
   
-  // Subtracts Deferred Cash (ccExpThisMonth) from the Budgeted Net Cash Flow
-  const netB = totalBudgetInc - totalBudgetExp - ccExpThisMonth;
+  const netB = totalBudgetInc - totalBudgetExp - ccPaidThisMonth;
   const netA = totalActualInc - actualCashOutflow;
 
   return `
@@ -2909,7 +2838,7 @@ function renderBudget(){
   <div class="section">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
       <div class="section-title" style="margin-bottom:0;">${monthNames[month-1]} ${year}</div>
-      <button class="btn secondary" style="padding:4px 10px;min-height:32px;display:inline-flex;align-items:center;" onclick="isBudgetSortMode = !isBudgetSortMode; render(); triggerHaptic('light');">${isBudgetSortMode ? 'Done' : '↕ Reorder'}</button>
+      <button class="btn secondary" style="padding:6px 14px;min-height:34px;display:inline-flex;align-items:center;border-radius:999px;font-weight:600;font-size:12.5px;gap:6px;" onclick="isBudgetSortMode = !isBudgetSortMode; render(); triggerHaptic('light');">${isBudgetSortMode ? ICONS.check + 'Done' : ICONS.reorder + 'Reorder'}</button>
     </div>
     <div class="table-wrap">
     <table>
@@ -3009,10 +2938,7 @@ function renderSavings(){
         <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-pct">${pct(progress)}</div></div></td>
         <td>${months}</td>
         <td class="text">${estDate}</td>
-        <td style="white-space:nowrap; text-align:right;">
-          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveSaving('${g.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-        </td>
+        ${renderSaveCancelBtns(`saveSaving('${g.id}')`)}
       </tr>`;
     }
 
@@ -3032,10 +2958,7 @@ function renderSavings(){
       </td>
       <td>${months}</td>
       <td class="text">${estDate}</td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${g.id}'; editingSection=null; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteSaving('${g.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(g.id, `activeEditId='${g.id}'; editingSection=null; render(); triggerHaptic('light');`, `deleteSaving('${g.id}')`)}
     </tr>`;
   }).join("");
 
@@ -3087,14 +3010,9 @@ function renderSavings(){
           </td>
           <td>${efMonths}</td>
           <td class="text" style="font-weight:600;">${efEstDate}</td>
-          <td style="white-space:nowrap; text-align:right;">
-            ${isEfEditing ? `
-            <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveEmergencyFund(); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-            <button class="btn secondary btn-action" onclick="editingSection=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-            ` : `
-            <button class="btn secondary btn-action" onclick="editingSection='ef'; activeEditId=null; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-            `}
-          </td>
+          ${isEfEditing ? renderSaveCancelBtns("saveEmergencyFund()", "editingSection=null; render(); triggerHaptic('light');") : `
+          <td style="white-space:nowrap; text-align:right;"><button class="btn secondary btn-action" onclick="editingSection='ef'; activeEditId=null; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button></td>
+          `}
         </tr>
       </tbody>
     </table>
@@ -3132,19 +3050,9 @@ function saveSaving(id) {
 function addSaving(){
   const newId = uid();
   state.savingsGoals.push({id:newId, name:"New Goal", goal:0, starting:0, monthly:0, saved:0, updatedAt: Date.now()});
-  activeEditId = newId; // Immediately open new goal in edit mode!
+  activeEditId = newId;
   editingSection = null;
   saveDataState(); render();
-}
-function deleteSaving(id){
-  showConfirmAlert("Delete Goal", "Are you sure you want to delete this savings goal?", () => {
-    if (activeEditId === id) activeEditId = null;
-    if (!state.deletedIds) state.deletedIds = [];
-    state.deletedIds.push(id);
-    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-    state.savingsGoals = state.savingsGoals.filter(g=>g.id!==id); 
-    saveDataState(); render();
-  }); 
 }
 function saveEmergencyFund() {
   if (!state.emergencyFund) state.emergencyFund = { monthsTarget: 6, saved: 0, monthly: 0 };
@@ -3172,10 +3080,7 @@ function renderDebt(){
           </select>
         </td>
         <td><input type="number" id="edit-a-bal" value="${a.balance}"></td>
-        <td style="white-space:nowrap; text-align:right;">
-          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveAccount('${a.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-        </td>
+        ${renderSaveCancelBtns(`saveAccount('${a.id}')`)}
       </tr>`;
     }
     return `
@@ -3183,10 +3088,7 @@ function renderDebt(){
       <td class="text" style="font-weight:600;">${a.name}</td>
       <td class="text"><span style="display:inline-flex;align-items:center;">${a.type === 'Cash' ? ICONS.cash : ICONS.bank} ${a.type === 'Cash' ? 'Cash' : 'Debit / Bank'}</span></td>
       <td class="${+a.balance >= 0 ? 'amt-pos' : 'amt-neg'}" style="font-weight:600;">${fmt(a.balance)}</td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${a.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteAccount('${a.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(a.id, `activeEditId='${a.id}'; render(); triggerHaptic('light');`, `deleteAccount('${a.id}')`)}
     </tr>`;
   }).join("");
 
@@ -3210,10 +3112,7 @@ function renderDebt(){
         <td><input type="number" id="edit-c-bal" value="${c.balance}"></td>
         <td class="${avail > 0 ? 'amt-pos' : 'amt-neg'}">${fmt(avail)}</td>
         <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${util}%;${util > 80 ? 'background:var(--brick);' : ''}"></div></div><div class="progress-pct">${pct(util)}</div></div></td>
-        <td style="white-space:nowrap; text-align:right;">
-          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveCreditCard('${c.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-        </td>
+        ${renderSaveCancelBtns(`saveCreditCard('${c.id}')`)}
       </tr>`;
     }
 
@@ -3229,10 +3128,7 @@ function renderDebt(){
           <div class="progress-pct">${pct(util)}</div>
         </div>
       </td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${c.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteCreditCard('${c.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(c.id, `activeEditId='${c.id}'; render(); triggerHaptic('light');`, `deleteCreditCard('${c.id}')`)}
     </tr>`;
   }).join("");
 
@@ -3258,10 +3154,7 @@ function renderDebt(){
         <td><input type="number" id="edit-d-extra" value="${d.extraPayment}"></td>
         <td>${fmt(totalPay)}</td>
         <td><div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-pct">${pct(progress)}</div></div></td>
-        <td style="white-space:nowrap; text-align:right;">
-          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveDebt('${d.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-        </td>
+        ${renderSaveCancelBtns(`saveDebt('${d.id}')`)}
       </tr>`;
     }
 
@@ -3281,10 +3174,7 @@ function renderDebt(){
           <div class="progress-pct">${pct(progress)}</div>
         </div>
       </td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${d.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteDebt('${d.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(d.id, `activeEditId='${d.id}'; render(); triggerHaptic('light');`, `deleteDebt('${d.id}')`)}
     </tr>`;
   }).join("");
 
@@ -3370,16 +3260,7 @@ function addAccount(){
   activeEditId = newId;
   saveDataState(); render();
 }
-function deleteAccount(id){
-  showConfirmAlert("Delete Account", "Are you sure you want to delete this account?", () => {
-    if (activeEditId === id) activeEditId = null;
-    if (!state.deletedIds) state.deletedIds = [];
-    state.deletedIds.push(id);
-    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-    state.accounts = state.accounts.filter(a => a.id !== id);
-    saveDataState(); render();
-  });
-}
+
 function saveCreditCard(id) {
   const c = (state.creditCards || []).find(x=>x.id===id); if(!c) return;
   c.name = document.getElementById("edit-c-name") ? document.getElementById("edit-c-name").value : c.name;
@@ -3396,16 +3277,7 @@ function addCreditCard(){
   activeEditId = newId;
   saveDataState(); render();
 }
-function deleteCreditCard(id){
-  showConfirmAlert("Delete Credit Card", "Are you sure you want to delete this credit card?", () => {
-    if (activeEditId === id) activeEditId = null;
-    if (!state.deletedIds) state.deletedIds = [];
-    state.deletedIds.push(id);
-    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-    state.creditCards = state.creditCards.filter(c => c.id !== id);
-    saveDataState(); render();
-  });
-}
+
 function saveDebt(id) {
   const d = state.debts.find(x=>x.id===id); if(!d) return;
   d.name = document.getElementById("edit-d-name") ? document.getElementById("edit-d-name").value : d.name;
@@ -3424,16 +3296,6 @@ function addDebt(){
   state.debts.push({id:newId, name:"New Debt", type:"Loan", original:0, current:0, rate:0, minPayment:0, extraPayment:0, updatedAt: Date.now()});
   activeEditId = newId;
   saveDataState(); render();
-}
-function deleteDebt(id){
-  showConfirmAlert("Delete Debt", "Are you sure you want to delete this debt entry?", () => {
-    if (activeEditId === id) activeEditId = null;
-    if (!state.deletedIds) state.deletedIds = [];
-    state.deletedIds.push(id);
-    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-    state.debts = state.debts.filter(d=>d.id!==id); 
-    saveDataState(); render();
-  });
 }
 
 /* ============================= NET WORTH ============================= */
@@ -3456,10 +3318,7 @@ function renderNetWorth(){
         <td><input type="number" id="edit-nw-othl" value="${e.otherLiabilities}"></td>
         <td class="amt-neg">${fmt(liabilities)}</td>
         <td class="${net<0?'amt-neg':'amt-pos'}">${fmt(net)}</td>
-        <td style="white-space:nowrap; text-align:right;">
-          <button class="btn save-btn btn-action" style="margin-right:4px;" onclick="saveNW('${e.id}'); triggerHaptic('medium');" title="Save">${ICONS.check}</button>
-          <button class="btn secondary btn-action" onclick="activeEditId=null; render(); triggerHaptic('light');" title="Cancel">${ICONS.close}</button>
-        </td>
+        ${renderSaveCancelBtns(`saveNW('${e.id}')`)}
       </tr>`;
     }
 
@@ -3477,10 +3336,7 @@ function renderNetWorth(){
       <td class="amt-neg">${fmt(e.otherLiabilities)}</td>
       <td class="amt-neg" style="font-weight:600;">${fmt(liabilities)}</td>
       <td class="${net<0?'amt-neg':'amt-pos'}" style="font-weight:700;">${fmt(net)}</td>
-      <td style="white-space:nowrap; text-align:right;">
-        <button class="btn secondary btn-action" style="margin-right:4px;" onclick="activeEditId='${e.id}'; render(); triggerHaptic('light');" title="Edit">${ICONS.edit}</button>
-        <button class="btn danger btn-action" onclick="deleteNW('${e.id}')" title="Delete">${ICONS.delete}</button>
-      </td>
+      ${renderActionBtns(e.id, `activeEditId='${e.id}'; render(); triggerHaptic('light');`, `deleteNW('${e.id}')`)}
     </tr>`;
   }).join("");
 
@@ -3544,16 +3400,6 @@ function addNW(){
   state.netWorth.push({id:newId, month:"New Month", cash:0, investments:0, property:0, otherAssets:0, creditCards:0, loans:0, mortgage:0, otherLiabilities:0, updatedAt: Date.now()});
   activeEditId = newId;
   saveDataState(); render();
-}
-function deleteNW(id){
-  showConfirmAlert("Delete Entry", "Are you sure you want to delete this net worth record?", () => {
-    if (activeEditId === id) activeEditId = null;
-    if (!state.deletedIds) state.deletedIds = [];
-    state.deletedIds.push(id);
-    if (state.deletedIds.length > 300) state.deletedIds = state.deletedIds.slice(-300);
-    state.netWorth = state.netWorth.filter(e=>e.id!==id); 
-    saveDataState(); render();
-  });
 }
 
 /* ============================= CATEGORIES ============================= */
@@ -3625,7 +3471,6 @@ window.addEventListener("resize", () => {
   if (mobileNav) updateTabIndicator(mobileNav, state.activeTab, false);
 });
 
-/* iOS 26 Tab Bar & Header Scroll Minimize Engine */
 let lastScrollY = window.scrollY || 0;
 let scrollDelta = 0;
 let isTabMinimized = false;
@@ -3641,7 +3486,6 @@ window.addEventListener("scroll", (e) => {
     localStorage.setItem('sidebar_collapsed', true);
   }
 
-  // Mobile Floating Bar & Header Collapse on Scroll Down
   if (window.innerWidth <= 760) {
     const currentScrollY = window.scrollY || 0;
     const diff = currentScrollY - lastScrollY;
@@ -3716,7 +3560,14 @@ function handleDragStart(e) {
   if (!isBudgetSortMode) return;
   draggedRow = e.currentTarget;
   e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => { if (draggedRow) draggedRow.style.opacity = '0.3'; }, 0);
+  setTimeout(() => { 
+    if (draggedRow) {
+      draggedRow.style.opacity = '0.9'; 
+      draggedRow.style.transform = 'scale(1.01)';
+      draggedRow.style.boxShadow = '0 12px 32px rgba(0,0,0,0.15)';
+      draggedRow.style.backgroundColor = 'var(--card-hover)';
+    }
+  }, 0);
   triggerHaptic('light');
 }
 
@@ -3744,23 +3595,30 @@ function handleDrop(e) {
 
 function handleDragEnd(e) {
   if (!draggedRow) return;
-  draggedRow.style.opacity = '1';
+  draggedRow.style.opacity = '';
+  draggedRow.style.transform = '';
+  draggedRow.style.boxShadow = '';
+  draggedRow.style.backgroundColor = '';
   finalizeRowOrder(draggedRow.parentNode);
   draggedRow = null;
 }
 
-/* Touch-specific handlers for mobile devices */
 function handleTouchStart(e) {
   if (!isBudgetSortMode) return;
   touchDraggedRow = e.target.closest('tr[data-cat]');
   if (!touchDraggedRow) return;
-  touchDraggedRow.style.opacity = '0.4';
+  touchDraggedRow.style.opacity = '0.9';
+  touchDraggedRow.style.transform = 'scale(1.02)';
+  touchDraggedRow.style.boxShadow = '0 16px 40px rgba(0,0,0,0.2)';
+  touchDraggedRow.style.backgroundColor = 'var(--card-hover)';
+  touchDraggedRow.style.position = 'relative';
+  touchDraggedRow.style.zIndex = '100';
   triggerHaptic('light');
 }
 
 function handleTouchMove(e) {
   if (!touchDraggedRow || !isBudgetSortMode) return;
-  e.preventDefault(); // Stop scrolling while dragging the handle
+  e.preventDefault();
   
   const touch = e.touches[0];
   const elem = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -3782,7 +3640,12 @@ function handleTouchMove(e) {
 
 function handleTouchEnd(e) {
   if (!touchDraggedRow || !isBudgetSortMode) return;
-  touchDraggedRow.style.opacity = '1';
+  touchDraggedRow.style.opacity = '';
+  touchDraggedRow.style.transform = '';
+  touchDraggedRow.style.boxShadow = '';
+  touchDraggedRow.style.backgroundColor = '';
+  touchDraggedRow.style.position = '';
+  touchDraggedRow.style.zIndex = '';
   finalizeRowOrder(touchDraggedRow.parentNode);
   touchDraggedRow = null;
 }
