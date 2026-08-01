@@ -1182,6 +1182,11 @@ let editingSection = null;
 let isBudgetSortMode = false;
 
 function defaultState(){
+  const d = new Date();
+  const currentYear = d.getFullYear();
+  const currentMonth = d.getMonth() + 1;
+  const currentMonthName = monthNames[d.getMonth()];
+
   return {
     lastDataEdit: Date.now(),
     deletedIds: [],
@@ -1189,17 +1194,17 @@ function defaultState(){
     activeTab: "dashboard",
     showCCBreakdown: false,
     showAccountBreakdown: false,
-    dashboardYear: 2026,
-    dashboardMonth: new Date().getMonth()+1,
-    budgetMonth: 1,
-    budgetYear: 2026,
+    dashboardYear: currentYear,
+    dashboardMonth: currentMonth,
+    budgetMonth: currentMonth,
+    budgetYear: currentYear,
     categories: {
       income: ["Salary","Freelance / Side Income","Investment Income","Gifts Received","Other Income"],
       expense: ["Housing / Rent","Utilities","Groceries","Transportation","Insurance","Debt Payments","Dining Out","Entertainment","Subscriptions","Personal Care","Shopping","Health & Medical","Education","Miscellaneous"]
     },
     transactions: [
-      {id:uid(), date:"2026-01-05", description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()},
-      {id:uid(), date:"2026-01-01", description:"Monthly salary", category:"Salary", type:"Income", amount:3200, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()}
+      {id:uid(), date:`${currentYear}-${String(currentMonth).padStart(2,'0')}-05`, description:"Grocery run", category:"Groceries", type:"Expense", amount:85.50, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()},
+      {id:uid(), date:`${currentYear}-${String(currentMonth).padStart(2,'0')}-01`, description:"Monthly salary", category:"Salary", type:"Income", amount:3200, paymentType:"Debit", accountId:"", accountName:"Main Checking", creditCardId:"", creditCardName:"", debtId:"", debtName:"", updatedAt: Date.now()}
     ],
     budgets: {"Groceries":400,"Housing / Rent":1200,"Utilities":150,"Salary":3200},
     emergencyFund: {
@@ -1221,7 +1226,7 @@ function defaultState(){
       {id:uid(), name:"Student Loan", type:"Personal Loan", original:15000, current:11200, rate:6.5, minPayment:250, extraPayment:50, updatedAt: Date.now()}
     ],
     netWorth: [
-      {id:uid(), month:"Jan 2026", cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0, updatedAt: Date.now()}
+      {id:uid(), month:`${currentMonthName} ${currentYear}`, cash:5000, investments:10000, property:0, otherAssets:500, creditCards:2000, loans:8000, mortgage:0, otherLiabilities:0, updatedAt: Date.now()}
     ]
   };
 }
